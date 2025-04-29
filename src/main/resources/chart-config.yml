@@ -1,0 +1,3 @@
+chart:
+  collect-target-pairs: USD_JPY
+  time-frames: 1m, 15m, 1h, 4h, 1d, 1w

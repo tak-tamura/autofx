@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: autofx
+  profiles:
+    active: dev
+  config:
+    import:
+      - chart-config.yml
+      - trade-config.yml
+      - fxapi.yml
+  datasource:
+    url: jdbc:mysql://localhost:3306/autofx?allowPublicKeyRetrieval=true&useSSL=false
+    username: autofx
+    password: s4t1ns3n
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 16379
+      password: null
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    org.springframework.security: TRACE
+#    org.springframework.web.client.RestTemplate: DEBUG

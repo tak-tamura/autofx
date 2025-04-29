@@ -1,0 +1,18 @@
+public-api:
+  base-url: https://forex-api.coin.z.com/public
+  ticker: ${public-api.base-url}/v1/ticker
+  klines: ${public-api.base-url}/v1/klines
+private-api:
+  api-key: ekkFBHN2+GKpwlj98ywLza9WG1yTtoly
+  api-secret: 4F+01ODNUZTR4Vt18TBJneR7Mo292W7QfjY5seDA0wLrquNKr9tQE7sSWAukd0Od
+  host: https://forex-api.coin.z.com/private
+  path:
+    assets: /v1/account/assets
+    order: /v1/order
+    close-order: /v1/closeOrder
+    close-bulk-order: /v1/cancelBulkOrder
+    executions: /v1/executions
+    ws-auth: /v1/ws-auth
+websocket-api:
+  base-url: wss://forex-api.coin.z.com/ws/private/v1/
+
