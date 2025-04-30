@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.List;
+
 @Disabled
 @SpringBootTest
 public class PrivateApiTest {
@@ -46,7 +48,7 @@ public class PrivateApiTest {
             .executionType(ExecutionType.MARKET)
             .build();
 
-        final OrderResponse response = privateApi.closeOrder(request);
+        final List<OrderResponse> response = privateApi.closeOrder(request);
         System.out.println(response);
     }
 
