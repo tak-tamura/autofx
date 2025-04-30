@@ -3,8 +3,8 @@ public-api:
   ticker: ${public-api.base-url}/v1/ticker
   klines: ${public-api.base-url}/v1/klines
 private-api:
-  api-key: ekkFBHN2+GKpwlj98ywLza9WG1yTtoly
-  api-secret: 4F+01ODNUZTR4Vt18TBJneR7Mo292W7QfjY5seDA0wLrquNKr9tQE7sSWAukd0Od
+  api-key: #api key
+  api-secret: #api secret
   host: https://forex-api.coin.z.com/private
   path:
     assets: /v1/account/assets
