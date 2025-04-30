@@ -2,7 +2,6 @@ import axios, { AxiosResponse } from "axios";
 import { useCallback, useState } from "react";
 import { ChartApiResponse } from "../types/chartApiResponse";
 import { GetChartDateRequest } from "../types/requests";
-import { getCookie } from "../util/cookies";
 
 type Row = Array<Date | number | string | null>;
 
@@ -23,14 +22,10 @@ export const useGetChartData = () => {
 
     const getChartData = useCallback((req: GetChartDateRequest) => {
         //console.log(req);
-        console.log(getCookie("XSRF-TOKEN"));
         axios.post<ChartApiResponse>(
             "/api/chart",
             req,
             {
-                headers: {
-                    "CSRF-TOKEN": getCookie("XSRF-TOKEN")
-                },
                 withCredentials: true
             }
         ).then((res: AxiosResponse<ChartApiResponse>) => {
