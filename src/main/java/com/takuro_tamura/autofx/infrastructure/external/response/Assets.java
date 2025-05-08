@@ -8,9 +8,9 @@ public class Assets {
     private Double availableAmount;
     private Double balance;
     private Double estimatedTradeFee;
-    private Integer margin;
+    private Double margin;
     private Double marginRatio;
     private Double positionLossGain;
     private Double totalSwap;
-    private Integer transferableAmount;
+    private Double transferableAmount;
 }
