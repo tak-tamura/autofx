@@ -5,15 +5,15 @@ import com.takuro_tamura.autofx.infrastructure.websocket.response.ExecutionRespo
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.function.Consumer;
 
 @RequiredArgsConstructor
-public class WebSocketMessageHandler extends TextWebSocketHandler {
-    private final Logger log = LoggerFactory.getLogger(TextWebSocketHandler.class);
+public class WebSocketMessageHandler implements WebSocketHandler {
+
+    private final Logger log = LoggerFactory.getLogger(WebSocketMessageHandler.class);
     private final ObjectMapper objectMapper;
     private final Consumer<ExecutionResponse> executionConsumer;
 
@@ -25,11 +25,21 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+    public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
+        if (message instanceof TextMessage textMessage) {
+            handleText(session, textMessage);
+        } else if (message instanceof PingMessage pingMessage) {
+            log.info("Received ping from server. Sending pong.");
+            session.sendMessage(new PongMessage(pingMessage.getPayload()));
+        } else {
+            log.warn("Unhandled message type: {}", message.getClass().getSimpleName());
+        }
+    }
+
+    private void handleText(WebSocketSession session, TextMessage message) {
         try {
-            log.info("message: {}", message.getPayload());
+            log.info("Received execution info");
             final ExecutionResponse execution = objectMapper.readValue(message.getPayload(), ExecutionResponse.class);
-            log.info("Received execution info: {}", execution);
             executionConsumer.accept(execution);
         } catch (Exception e) {
             log.error("Failed to handle execution info", e);
@@ -37,7 +47,18 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void handleTransportError(WebSocketSession session, Throwable th) {
-        log.error("Transport error occurred", th);
+    public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
+        log.error("Transport error", exception);
+    }
+
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        log.warn("WebSocket closed. Status: {}", status);
+    }
+
+    @Override
+    public boolean supportsPartialMessages() {
+        return false;
     }
 }
+
