@@ -5,12 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.takuro_tamura.autofx.infrastructure.external.exception.ApiErrorException;
 import com.takuro_tamura.autofx.infrastructure.external.exception.ApiLimitExceedException;
 import com.takuro_tamura.autofx.infrastructure.external.request.*;
-import com.takuro_tamura.autofx.infrastructure.external.response.ApiResponse;
-import com.takuro_tamura.autofx.infrastructure.external.response.Assets;
-import com.takuro_tamura.autofx.infrastructure.external.response.CancelBulkOrderResponse;
-import com.takuro_tamura.autofx.infrastructure.external.response.OrderResponse;
+import com.takuro_tamura.autofx.infrastructure.external.response.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -138,6 +136,12 @@ public class PrivateApi {
                     throw new ApiLimitExceedException();
                 }
                 log.error("[POST] Private API returned error response: {}", response);
+                if (CollectionUtils.isNotEmpty(response.getMessages())) {
+                    final ApiErrorCode errorCode = ApiErrorCode.fromCode(
+                        response.getMessages().get(0).getMessageCode()
+                    );
+                    throw new ApiErrorException(errorCode, "[POST] Private API call failed, status:" + response.getStatus());
+                }
                 throw new ApiErrorException("[POST] Private API call failed, status:" + response.getStatus());
             }
 

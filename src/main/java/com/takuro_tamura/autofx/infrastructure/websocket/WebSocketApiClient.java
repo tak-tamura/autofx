@@ -16,6 +16,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class WebSocketApiClient {
@@ -26,6 +27,8 @@ public class WebSocketApiClient {
     private final ExecutionApplicationService executionApplicationService;
     private final ObjectMapper objectMapper;
     private final RedisCacheService redisCacheService;
+    private final AtomicBoolean reconnecting = new AtomicBoolean(false);
+    private volatile WebSocketSession session;
 
     public WebSocketApiClient(
         @Value("${websocket-api.base-url}") String webSocketApiUrl,
@@ -44,10 +47,42 @@ public class WebSocketApiClient {
     @PostConstruct
     public void init() {
         try {
-            connect();
+            connectWithRetry();
         } catch (Exception e) {
             log.error("Failed to connect WebSocket", e);
         }
+    }
+
+    public void reconnect() {
+        if (reconnecting.compareAndSet(false, true)) {
+            log.warn("WebSocket disconnected. Attempting to reconnect...");
+            connectWithRetry();
+        } else {
+            log.info("Reconnect already in progress.");
+        }
+    }
+
+    private void connectWithRetry() {
+        new Thread(() -> {
+            int retryCount = 0;
+            while (true) {
+                try {
+                    connect(); // 通常接続処理
+                    log.info("WebSocket connection established.");
+                    reconnecting.set(false);
+                    break;
+                } catch (Exception e) {
+                    retryCount++;
+                    log.error("WebSocket connection failed (attempt {}): {}", retryCount, e.getMessage());
+                    try {
+                        Thread.sleep(Math.min(10000L, retryCount * 2000L)); // 線形バックオフ
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }).start();
     }
 
     private void connect() throws Exception {
@@ -59,11 +94,11 @@ public class WebSocketApiClient {
         final String uri = webSocketApiUrl + token;
 
         final CompletableFuture<WebSocketSession> future = client.execute(
-            new WebSocketMessageHandler(objectMapper, this::handleExecutionEvent),
+            new WebSocketMessageHandler(objectMapper, this::handleExecutionEvent, this::reconnect),
             uri
         );
 
-        final WebSocketSession session = future.get();
+        this.session = future.get();
         log.info("WebSocket session established, id: {}", session.getId());
     }
 

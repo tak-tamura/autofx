@@ -16,6 +16,7 @@ public class WebSocketMessageHandler implements WebSocketHandler {
     private final Logger log = LoggerFactory.getLogger(WebSocketMessageHandler.class);
     private final ObjectMapper objectMapper;
     private final Consumer<ExecutionResponse> executionConsumer;
+    private final Runnable onDisconnect;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -54,6 +55,7 @@ public class WebSocketMessageHandler implements WebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         log.warn("WebSocket closed. Status: {}", status);
+        onDisconnect.run();
     }
 
     @Override
