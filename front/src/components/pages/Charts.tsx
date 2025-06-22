@@ -6,7 +6,9 @@ import {
     Flex, 
     Input, 
     Select, 
-    Spacer, 
+    Spacer,
+    VStack,
+    HStack,
     Stack, 
     Text,
 } from "@chakra-ui/react";
@@ -246,96 +248,121 @@ export const Charts: FC = () => {
     ]);
 
     return (
-        <Box justifyContent="center" bg="blackAlpha.50" w="sm" p={0} borderRadius="md" shadow="md" width="100%" mt={1}>
-            <Stack p={2} align="center" justify="center" bg="white">
-                <Flex gap={2}>
-                    {/* 通貨選択ドロップダウン */}
-                    <Box>
-                        <Select onChange={(e) => setCurrencyPair(e.target.value)}>
-                            <option value="USD_JPY">USD JPY</option>
-                            <option value="EUR_JPY">EUR JPY</option>
-                        </Select>
-                    </Box>
-                    <Spacer />
-                    {/* Duration選択ボタン */}
-                    <ButtonGroup gap="1">
-                        <Button colorScheme="teal" onClick={() => setTimeFrame("1m")}>1m</Button>
-                        <Button colorScheme="teal" onClick={() => setTimeFrame("15m")}>15m</Button>
-                        <Button colorScheme="teal" onClick={() => setTimeFrame("1h")}>1h</Button>
-                        <Button colorScheme="teal" onClick={() => setTimeFrame("4h")}>4h</Button>
-                        <Button colorScheme="teal" onClick={() => setTimeFrame("1d")}>1d</Button>
-                        <Button colorScheme="teal" onClick={() => setTimeFrame("1w")}>1w</Button>
-                    </ButtonGroup>
-                    <Input value={limit} onChange={(e) => setLimit(Number(e.target.value))} width={100}/>
-                </Flex>
-                <Spacer />
-                {/* SMAパラメータ */}
-                <Flex gap={2}>
-                    <Checkbox onChange={(e) => setEnableSma(e.target.checked)}>SMA</Checkbox>
-                    <Input width={100} value={smaPeriod1} onChange={(e) => setSmaPeriod1(Number(e.target.value))} />
-                    <Input width={100} value={smaPeriod2} onChange={(e) => setSmaPeriod2(Number(e.target.value))} />
-                    <Input width={100} value={smaPeriod3} onChange={(e) => setSmaPeriod3(Number(e.target.value))} />
-                </Flex>
-                {/* EMAパラメータ */}
-                <Flex gap={2}>
-                    <Checkbox onChange={(e) => setEnableEma(e.target.checked)}>EMA</Checkbox>
-                    <Input width={100} value={emaPeriod1} onChange={(e) => setEmaPeriod1(Number(e.target.value))} />
-                    <Input width={100} value={emaPeriod2} onChange={(e) => setEmaPeriod2(Number(e.target.value))} />
-                    <Input width={100} value={emaPeriod3} onChange={(e) => setEmaPeriod3(Number(e.target.value))} />
-                </Flex>
-                {/* BBandsパラメータ */}
-                <Flex gap={2}>
-                    <Checkbox onChange={(e) => setEnableBBands(e.target.checked)}>BBands</Checkbox>
-                    <Input width={100} placeholder="K" value={bbandsK} onChange={(e) => setBbandsK(Number(e.target.value))} />
-                    <Input width={100} placeholder="N" value={bbandsN} onChange={(e) => setBbandsN(Number(e.target.value))} />
-                </Flex>
-                {/* Ichimokuパラメータ */}
-                <Flex gap={2}>
-                    <Checkbox onChange={(e) => setEnableIchimoku(e.target.checked)}>Ichimoku</Checkbox>
-                </Flex>
-                {/* Orderパラメータ */}
-                <Flex gap={2}>
-                    <Checkbox onChange={(e) => setIncludeOrder(e.target.checked)}>Order</Checkbox>
-                    {includeOrder && <Text>¥{profit}</Text>}
-                </Flex>
-                {/* ロウソク足チャート */}
+        <Flex w="100%" h="100vh" p={4} bg="gray.100" gap={4}>
+          {/* 左パネル: 設定 */}
+          <Box w="300px" bg="white" p={4} borderRadius="md" shadow="md" overflowY="auto">
+            <VStack align="stretch" spacing={4}>
+              {/* 通貨ペア */}
+              <Box>
+                <Text fontWeight="bold">通貨ペア</Text>
+                <Select onChange={(e) => setCurrencyPair(e.target.value)}>
+                  <option value="USD_JPY">USD JPY</option>
+                  <option value="EUR_JPY">EUR JPY</option>
+                </Select>
+              </Box>
+
+              {/* 時間足 */}
+              <Box>
+                <Text fontWeight="bold">時間足</Text>
+                <ButtonGroup size="sm" isAttached variant="outline">
+                  {["1m", "15m", "1h", "4h", "1d", "1w"].map((frame) => (
+                    <Button key={frame} onClick={() => setTimeFrame(frame)}>{frame}</Button>
+                  ))}
+                </ButtonGroup>
+              </Box>
+
+              {/* ロウソク足数 */}
+              <Box>
+                <Text fontWeight="bold">ローソク足数</Text>
+                <Input type="number" value={limit} onChange={(e) => setLimit(Number(e.target.value))} />
+              </Box>
+
+              {/* SMA設定 */}
+              <Box>
+                <Checkbox onChange={(e) => setEnableSma(e.target.checked)}>SMA</Checkbox>
+                <HStack>
+                  <Input placeholder="期間1" width="80px" value={smaPeriod1} onChange={(e) => setSmaPeriod1(Number(e.target.value))} />
+                  <Input placeholder="期間2" width="80px" value={smaPeriod2} onChange={(e) => setSmaPeriod2(Number(e.target.value))} />
+                  <Input placeholder="期間3" width="80px" value={smaPeriod3} onChange={(e) => setSmaPeriod3(Number(e.target.value))} />
+                </HStack>
+              </Box>
+
+              {/* EMA設定 */}
+              <Box>
+                <Checkbox onChange={(e) => setEnableEma(e.target.checked)}>EMA</Checkbox>
+                <HStack>
+                  <Input placeholder="期間1" width="80px" value={emaPeriod1} onChange={(e) => setEmaPeriod1(Number(e.target.value))} />
+                  <Input placeholder="期間2" width="80px" value={emaPeriod2} onChange={(e) => setEmaPeriod2(Number(e.target.value))} />
+                  <Input placeholder="期間3" width="80px" value={emaPeriod3} onChange={(e) => setEmaPeriod3(Number(e.target.value))} />
+                </HStack>
+              </Box>
+
+              {/* BBands設定 */}
+              <Box>
+                <Checkbox onChange={(e) => setEnableBBands(e.target.checked)}>BBands</Checkbox>
+                <HStack>
+                  <Input placeholder="K" width="80px" value={bbandsK} onChange={(e) => setBbandsK(Number(e.target.value))} />
+                  <Input placeholder="N" width="80px" value={bbandsN} onChange={(e) => setBbandsN(Number(e.target.value))} />
+                </HStack>
+              </Box>
+
+              {/* Ichimoku */}
+              <Checkbox onChange={(e) => setEnableIchimoku(e.target.checked)}>Ichimoku</Checkbox>
+
+              {/* Order */}
+              <Checkbox onChange={(e) => setIncludeOrder(e.target.checked)}>Order</Checkbox>
+              {includeOrder && <Text fontSize="sm">¥{profit}</Text>}
+
+              {/* RSI */}
+              <Checkbox onChange={(e) => setEnableRsi(e.target.checked)}>RSI</Checkbox>
+
+              {/* MACD */}
+              <Checkbox onChange={(e) => setEnableMacd(e.target.checked)}>MACD</Checkbox>
+              {enableMacd && (
+                <HStack>
+                  <Input placeholder="Fast" width="80px" value={inFastPeriod} onChange={(e) => setInFastPeriod(Number(e.target.value))} />
+                  <Input placeholder="Slow" width="80px" value={inSlowPeriod} onChange={(e) => setInSlowPeriod(Number(e.target.value))} />
+                  <Input placeholder="Signal" width="80px" value={inSignalPeriod} onChange={(e) => setInSignalPeriod(Number(e.target.value))} />
+                </HStack>
+              )}
+            </VStack>
+          </Box>
+
+          {/* 右パネル: チャート */}
+          <Box flex="1" bg="white" p={4} borderRadius="md" shadow="md">
+            <VStack spacing={4}>
+              {/* メインチャート */}
+              <Chart
+                chartType="CandlestickChart"
+                width="100%"
+                height="600px"
+                data={chartData}
+                options={chartOptions}
+              />
+
+              {/* RSI */}
+              {enableRsi && rsiChartData.length > 0 && (
                 <Chart
-                    chartType="CandlestickChart"
-                    width="100%"
-                    height="600px"
-                    data={chartData}
-                    options={chartOptions}
+                  chartType="LineChart"
+                  width="100%"
+                  height="200px"
+                  data={rsiChartData}
+                  options={rsiChartOptions}
                 />
-                {/* RSIチャート */}
-                <Flex gap={2}>
-                    <Checkbox onChange={(e) => setEnableRsi(e.target.checked)}>RSI</Checkbox>
-                </Flex>
-                {rsiChartData.length && (
-                    <Chart
-                        chartType="LineChart"
-                        width="100%"
-                        height="200px"
-                        data={rsiChartData}
-                        options={rsiChartOptions}
-                    />
-                )}
-                {/* MACDチャート */}
-                <Flex gap={2}>
-                    <Checkbox onChange={(e) => setEnableMacd(e.target.checked)}>MACD</Checkbox>
-                    <Input width={100} placeholder="Fast Period" value={inFastPeriod} onChange={(e) => setInFastPeriod(Number(e.target.value))} />
-                    <Input width={100} placeholder="Slow Period" value={inSlowPeriod} onChange={(e) => setInSlowPeriod(Number(e.target.value))} />
-                    <Input width={100} placeholder="Signal Period" value={inSignalPeriod} onChange={(e) => setInSignalPeriod(Number(e.target.value))} />
-                </Flex>
-                {macdChartData.length && (
-                    <Chart
-                        chartType="ComboChart"
-                        width="100%"
-                        height="200px"
-                        data={macdChartData}
-                        options={macdChartOptions}
-                    />
-                )}
-            </Stack>
-        </Box>
-    );
+              )}
+
+              {/* MACD */}
+              {enableMacd && macdChartData.length > 0 && (
+                <Chart
+                  chartType="ComboChart"
+                  width="100%"
+                  height="200px"
+                  data={macdChartData}
+                  options={macdChartOptions}
+                />
+              )}
+            </VStack>
+          </Box>
+        </Flex>
+      );
 };
