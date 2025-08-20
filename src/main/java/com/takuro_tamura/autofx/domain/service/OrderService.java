@@ -7,9 +7,9 @@ import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderStatus;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.Price;
+import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
 import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
-import com.takuro_tamura.autofx.infrastructure.config.TradeProperties;
 import com.takuro_tamura.autofx.infrastructure.external.adapter.PrivateApi;
 import com.takuro_tamura.autofx.infrastructure.external.enums.ExecutionType;
 import com.takuro_tamura.autofx.infrastructure.external.request.CloseOrderRequest;
@@ -30,7 +30,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final PrivateApi privateApi;
     private final RedisCacheService redisCacheService;
-    private final TradeProperties tradeProperties;
+    private final TradeConfigParameterService tradeConfigParameterService;
 
     public boolean shouldCloseOrder(Order order, Price currentPrice) {
         if (order == null || order.getStatus() != OrderStatus.FILLED) {
@@ -43,20 +43,23 @@ public class OrderService {
 //        }
 
         // 利益確定・損切りラインに達していたらclose
+        final BigDecimal profitLimit = tradeConfigParameterService.getProfitLimit();
+        final BigDecimal stopLimit = tradeConfigParameterService.getStopLimit();
+
         if (order.getSide() == OrderSide.BUY) {
             // 利益確定
-            if (currentPrice.subtract(order.getFillPrice()).getValue().compareTo(tradeProperties.getProfitLimit()) >= 0) {
+            if (currentPrice.subtract(order.getFillPrice()).getValue().compareTo(profitLimit) >= 0) {
                 return true;
             }
             // 損切り
-            return order.getFillPrice().subtract(currentPrice).getValue().compareTo(tradeProperties.getStopLimit()) >= 0;
+            return order.getFillPrice().subtract(currentPrice).getValue().compareTo(stopLimit) >= 0;
         } else {
             // 利益確定
-            if (order.getFillPrice().subtract(currentPrice).getValue().compareTo(tradeProperties.getProfitLimit()) >= 0) {
+            if (order.getFillPrice().subtract(currentPrice).getValue().compareTo(profitLimit) >= 0) {
                 return true;
             }
             // 損切り
-            return currentPrice.subtract(order.getFillPrice()).getValue().compareTo(tradeProperties.getStopLimit()) >= 0;
+            return currentPrice.subtract(order.getFillPrice()).getValue().compareTo(stopLimit) >= 0;
         }
     }
 
@@ -106,13 +109,13 @@ public class OrderService {
     public void makeStopAndProfitOrder(Order order) {
         final double stopPrice = calculateStopPrice(
             order.getFillPrice().getValue(),
-            tradeProperties.getStopLimit(),
+            tradeConfigParameterService.getStopLimit(),
             order.getSide()
         );
 
         final double limitPrice = calculateLimitPrice(
             order.getFillPrice().getValue(),
-            tradeProperties.getProfitLimit(),
+            tradeConfigParameterService.getProfitLimit(),
             order.getSide()
         );
 

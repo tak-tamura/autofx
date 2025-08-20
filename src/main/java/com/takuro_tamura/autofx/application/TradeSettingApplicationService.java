@@ -3,9 +3,9 @@ package com.takuro_tamura.autofx.application;
 import com.takuro_tamura.autofx.domain.model.entity.OrderRepository;
 import com.takuro_tamura.autofx.domain.model.value.OrderStatus;
 import com.takuro_tamura.autofx.domain.service.OrderService;
+import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
 import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
-import com.takuro_tamura.autofx.infrastructure.config.TradeProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.TaskScheduler;
@@ -22,19 +22,20 @@ public class TradeSettingApplicationService {
     private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final RedisCacheService redisCacheService;
-    private final TradeProperties tradeProperties;
+    private final TradeConfigParameterService tradeConfigParameterService;
     private final TaskScheduler taskScheduler;
 
     public TradeSettingApplicationService(
         OrderService orderService,
         OrderRepository orderRepository,
         RedisCacheService redisCacheService,
-        TradeProperties tradeProperties
+        TradeConfigParameterService tradeConfigParameterService
     ) {
         this.orderService = orderService;
         this.orderRepository = orderRepository;
         this.redisCacheService = redisCacheService;
-        this.tradeProperties = tradeProperties;
+        this.tradeConfigParameterService = tradeConfigParameterService;
+
         final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.initialize();
         this.taskScheduler = scheduler;
@@ -44,7 +45,7 @@ public class TradeSettingApplicationService {
     public void suspendTrade() {
         redisCacheService.save(CacheKey.TRADE_ENABLED.getKey(), Boolean.FALSE);
 
-        orderRepository.findLatestByCurrencyPairWithLock(tradeProperties.getTargetPair())
+        orderRepository.findLatestByCurrencyPairWithLock(tradeConfigParameterService.getTargetCurrencyPair())
             .ifPresent(order -> {
                 if (order.getStatus() == OrderStatus.FILLED) {
                     orderService.closeOrder(order);

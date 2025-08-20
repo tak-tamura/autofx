@@ -10,7 +10,7 @@ import com.takuro_tamura.autofx.domain.model.entity.OrderRepository;
 import com.takuro_tamura.autofx.domain.service.BackTestService;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
-import com.takuro_tamura.autofx.infrastructure.config.TradeProperties;
+import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.presentation.controller.response.CandleDto;
 import com.takuro_tamura.autofx.presentation.controller.response.ChartResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class ChartApplicationService {
     private final CandleRepository candleRepository;
     private final OrderService orderService;
     private final OrderRepository orderRepository;
-    private final TradeProperties tradeProperties;
+    private final TradeConfigParameterService tradeConfigParameterService;
 
     public ChartResponse getChart(GetChartCommand command) {
         //log.info("getChart called, param: {}", command);
@@ -50,7 +50,7 @@ public class ChartApplicationService {
 
         if (command.isIncludeOrder()) {
             final List<Order> orders;
-            if (tradeProperties.isBackTest()) {
+            if (tradeConfigParameterService.isBackTest()) {
                 orders = backTestService.backTest(command.getCurrencyPair(), command.getTimeFrame(), command.getLimit());
             } else {
                 if (CollectionUtils.isNotEmpty(candles)) {

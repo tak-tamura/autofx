@@ -5,14 +5,16 @@ import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
 import com.takuro_tamura.autofx.domain.model.entity.Order;
 import com.takuro_tamura.autofx.domain.model.entity.OrderRepository;
+import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
+import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import com.takuro_tamura.autofx.domain.parameter.TradeParameter;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.TradeParameterService;
+import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
 import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
-import com.takuro_tamura.autofx.infrastructure.config.TradeProperties;
 import com.takuro_tamura.autofx.infrastructure.external.adapter.PrivateApi;
 import com.takuro_tamura.autofx.infrastructure.external.adapter.PublicApi;
 import com.takuro_tamura.autofx.infrastructure.external.response.Assets;
@@ -35,10 +37,10 @@ public class TradeApplicationService {
     private final static int MINIMUM_ORDER_QUANTITY = 10000;
 
     private final Logger log = LoggerFactory.getLogger(TradeApplicationService.class);
-    private final TradeProperties tradeProperties;
     private final CandleService candleService;
     private final OrderService orderService;
     private final TradeParameterService tradeParameterService;
+    private final TradeConfigParameterService tradeConfigParameterService;
     private final CandleRepository candleRepository;
     private final OrderRepository orderRepository;
     private final PrivateApi privateApi;
@@ -47,7 +49,7 @@ public class TradeApplicationService {
 
     @Transactional
     public synchronized void trade() {
-        if (tradeProperties.isBackTest()) {
+        if (tradeConfigParameterService.isBackTest()) {
             log.info("Back test mode is on, skip trading");
             return;
         }
@@ -59,18 +61,20 @@ public class TradeApplicationService {
             return;
         }
 
+        final CurrencyPair targetPair = tradeConfigParameterService.getTargetCurrencyPair();
+        final TimeFrame targetTimeFrame = tradeConfigParameterService.getTargetTimeFrame();
         log.info("Start trade, currency: {}, timeframe: {}",
-            tradeProperties.getTargetPair(),
-            tradeProperties.getTargetTimeFrame()
+            targetPair,
+            targetTimeFrame
         );
 
         final List<Candle> candles = candleRepository.findAllWithLimit(
-            tradeProperties.getTargetPair(),
-            tradeProperties.getTargetTimeFrame(),
-            tradeProperties.getMaxCandleNum()
+            targetPair,
+            targetTimeFrame,
+            tradeConfigParameterService.getMaxCandleNum()
         );
 
-        final Optional<Order> lastOrder = orderRepository.findLatestByCurrencyPairWithLock(tradeProperties.getTargetPair());
+        final Optional<Order> lastOrder = orderRepository.findLatestByCurrencyPairWithLock(targetPair);
         final Candle latestCandle = candles.get(candles.size() - 1);
         if (orderService.shouldCloseOrder(lastOrder.orElse(null), latestCandle.getClose())) {
             lastOrder.ifPresent(orderService::closeOrder);
@@ -98,9 +102,9 @@ public class TradeApplicationService {
         final int buyPoint = checkBuySignal(indicators, parameter, latestCandle, closePrices);
         final int sellPoint = checkSellSignal(indicators, parameter, latestCandle, closePrices);
 
-        if (buyPoint >= tradeProperties.getBuyPointThreshold()) {
+        if (buyPoint >= tradeConfigParameterService.getBuyPointThreshold()) {
             if (orderService.canOrder(lastOrder.orElse(null))) {
-                makeOrder(OrderSide.BUY);
+                makeOrder(OrderSide.BUY, targetPair);
             } else {
                 lastOrder.ifPresent(order -> {
                     if (order.getSide() != OrderSide.BUY) {
@@ -108,9 +112,9 @@ public class TradeApplicationService {
                     }
                 });
             }
-        } else if (sellPoint >= tradeProperties.getSellPointThreshold()) {
+        } else if (sellPoint >= tradeConfigParameterService.getSellPointThreshold()) {
             if (orderService.canOrder(lastOrder.orElse(null))) {
-                makeOrder(OrderSide.SELL);
+                makeOrder(OrderSide.SELL, targetPair);
             } else {
                 lastOrder.ifPresent(order -> {
                     if (order.getSide() != OrderSide.SELL) {
@@ -241,8 +245,8 @@ public class TradeApplicationService {
         return new Indicators(ema, bBands, ichimoku, macd, rsi);
     }
 
-    private void makeOrder(OrderSide type) {
-        final int orderAmount = calculateOrderAmount(type);
+    private void makeOrder(OrderSide type, CurrencyPair targetPair) {
+        final int orderAmount = calculateOrderAmount(type, targetPair);
         log.info("Calculated order amount: {}", orderAmount);
 
         if (orderAmount < MINIMUM_ORDER_QUANTITY) {
@@ -250,7 +254,7 @@ public class TradeApplicationService {
             return;
         }
 
-        orderService.makeOrder(tradeProperties.getTargetPair(), type, orderAmount);
+        orderService.makeOrder(targetPair, type, orderAmount);
     }
 
     /**
@@ -258,25 +262,25 @@ public class TradeApplicationService {
      * @param side 取引種別
      * @return 取引数量
      */
-    private int calculateOrderAmount(OrderSide side) {
+    private int calculateOrderAmount(OrderSide side, CurrencyPair targetPair) {
         // 現在の価格を取得
         final Ticker ticker = publicApi.getTickers().stream()
-            .filter(it -> it.getSymbol() == tradeProperties.getTargetPair())
+            .filter(it -> it.getSymbol() == targetPair)
             .findFirst()
-            .orElseThrow(() -> new IllegalStateException("cannot find ticker of " + tradeProperties.getTargetPair()));
+            .orElseThrow(() -> new IllegalStateException("cannot find ticker of " + targetPair.name()));
 
         // 資産残高を取得
         final Assets assets = privateApi.getAssets();
         log.info("Available asset amount: {}", assets.getAvailableAmount());
 
         // 取引可能金額 = 取引に使用する資産の割合 * 資産残高 * レバレッジ
-        final BigDecimal availableAmount = tradeProperties.getAvailableBalanceRate()
+        final BigDecimal availableAmount = tradeConfigParameterService.getAvailableBalanceRate()
             .multiply(BigDecimal.valueOf(assets.getAvailableAmount()))
-            .multiply(tradeProperties.getLeverage());
+            .multiply(tradeConfigParameterService.getLeverage());
 
         // 1通貨あたりの金額にAPIコストを加算
         final BigDecimal price = (side == OrderSide.BUY) ? new BigDecimal(ticker.getAsk()) : new BigDecimal(ticker.getBid());
-        final BigDecimal priceWithApiCost = price.add(tradeProperties.getApiCost());
+        final BigDecimal priceWithApiCost = price.add(tradeConfigParameterService.getApiCost());
 
         // 取引可能金額 / 1通貨あたりの金額が取引数量
         return availableAmount.divide(priceWithApiCost, RoundingMode.HALF_DOWN).intValue();
