@@ -5,5 +5,5 @@ import java.util.Optional;
 public interface ConfigParameterRepository {
     Optional<ConfigParameter> findByKey(String key);
 
-    void update(ConfigParameter configParameter);
+    int update(ConfigParameter configParameter);
 }

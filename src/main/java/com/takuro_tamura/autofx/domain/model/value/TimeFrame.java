@@ -1,5 +1,6 @@
 package com.takuro_tamura.autofx.domain.model.value;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -28,11 +29,17 @@ public enum TimeFrame {
     @Getter
     private final String fullLabel;
 
+    @JsonCreator
     public static TimeFrame fromLabel(String label) {
         return Arrays.stream(TimeFrame.values())
             .filter(timeFrame -> timeFrame.label.equals(label))
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Invalid TimeFrame label:" + label));
+    }
+
+    @JsonValue
+    public String toValue() {
+        return this.label;
     }
 
     public LocalDateTime truncateTime(LocalDateTime original) {

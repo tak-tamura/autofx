@@ -24,8 +24,8 @@ public class ConfigParameterRepositoryImpl implements ConfigParameterRepository 
     }
 
     @Override
-    public void update(ConfigParameter configParameter) {
+    public int update(ConfigParameter configParameter) {
         final ConfigParameterDataModel model = new ConfigParameterDataModel(configParameter);
-        mapper.update(model);
+        return mapper.update(model);
     }
 }

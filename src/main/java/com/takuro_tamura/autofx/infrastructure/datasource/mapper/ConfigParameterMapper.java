@@ -26,5 +26,5 @@ public interface ConfigParameterMapper {
         "WHERE " +
         "   `key` = #{key}"
     )
-    void update(ConfigParameterDataModel entity);
+    int update(ConfigParameterDataModel entity);
 }

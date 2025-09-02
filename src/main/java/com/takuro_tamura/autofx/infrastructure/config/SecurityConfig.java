@@ -32,7 +32,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/app/**", "/error", "/index.html", "**.png", "/api/auth/me").permitAll()
                 .requestMatchers("/api/v1/candle/**").access(new WebExpressionAuthorizationManager(localAccess))
-                .requestMatchers("/api/v1/trade/**").access(new WebExpressionAuthorizationManager(localAccess))
+                .requestMatchers("/api/v1/trade/suspend/**").access(new WebExpressionAuthorizationManager(localAccess))
+                .requestMatchers("/api/v1/trade/resume/**").access(new WebExpressionAuthorizationManager(localAccess))
                 .requestMatchers("/api/auth/register").access(new WebExpressionAuthorizationManager(localAccess))
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .requestMatchers("/static/**", "manifest.json", "favicon.ico").permitAll()
