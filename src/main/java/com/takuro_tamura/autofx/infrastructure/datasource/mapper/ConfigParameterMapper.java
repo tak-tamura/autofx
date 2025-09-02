@@ -1,6 +1,6 @@
 package com.takuro_tamura.autofx.infrastructure.datasource.mapper;
 
-import com.takuro_tamura.autofx.infrastructure.datasource.entity.ConfigParameterModel;
+import com.takuro_tamura.autofx.infrastructure.datasource.entity.ConfigParameterDataModel;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -9,14 +9,14 @@ import org.apache.ibatis.annotations.Update;
 public interface ConfigParameterMapper {
     @Select(
         "SELECT " +
-        "   key, " +
+        "   `key`, " +
         "   value " +
         "FROM " +
         "   config_parameter " +
         "WHERE" +
-        "   key = #{key}"
+        "   `key` = #{key}"
     )
-    ConfigParameterModel selectByKey(String key);
+    ConfigParameterDataModel selectByKey(String key);
 
     @Update(
         "UPDATE " +
@@ -24,7 +24,7 @@ public interface ConfigParameterMapper {
         "SET " +
         "   value = #{value} " +
         "WHERE " +
-        "   key = #{key}"
+        "   `key` = #{key}"
     )
-    void update(ConfigParameterModel entity);
+    void update(ConfigParameterDataModel entity);
 }
