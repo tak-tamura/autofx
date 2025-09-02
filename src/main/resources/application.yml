@@ -5,8 +5,6 @@ spring:
     active: dev
   config:
     import:
-      - chart-config.yml
-      - trade-config.yml
       - fxapi.yml
   datasource:
     url: jdbc:mysql://localhost:3306/autofx?allowPublicKeyRetrieval=true&useSSL=false

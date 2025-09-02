@@ -6,19 +6,17 @@ import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.Price;
-import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
+import com.takuro_tamura.autofx.domain.service.config.ChartConfigParameterService;
 import com.takuro_tamura.autofx.infrastructure.external.adapter.PublicApi;
 import com.takuro_tamura.autofx.infrastructure.external.response.FxStatus;
 import com.takuro_tamura.autofx.infrastructure.external.response.Kline;
-import org.apache.commons.collections4.queue.PredicatedQueue;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,32 +24,24 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CandleApplicationService {
     private final Logger log = LoggerFactory.getLogger(CandleApplicationService.class);
     private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    private final List<CurrencyPair> collectTargetPairs;
+    private final ChartConfigParameterService chartConfigParameterService;
 
     private final CandleRepository candleRepository;
 
     private final PublicApi publicApi;
-
-    public CandleApplicationService(
-        @Value("${chart.collect-target-pairs}") List<CurrencyPair> collectTargetPairs,
-        CandleRepository candleRepository,
-        PublicApi publicApi
-    ) {
-        this.collectTargetPairs = collectTargetPairs;
-        this.candleRepository = candleRepository;
-        this.publicApi = publicApi;
-    }
 
     public boolean upsertCandle(CandleUpsertCommand command) {
         if (command.getStatus() != FxStatus.OPEN) {
             return false;
         }
 
-        if (!collectTargetPairs.contains(command.getCurrencyPair())) {
+        final List<CurrencyPair> targetPairs = chartConfigParameterService.getTargetCurrencyPairs();
+        if (!targetPairs.contains(command.getCurrencyPair())) {
             return false;
         }
 
@@ -101,7 +91,7 @@ public class CandleApplicationService {
                 try {
                     candleRepository.save(candle, command.getTimeFrame());
                 } catch (DuplicateKeyException e) {
-                    log.warn("Duplicate entry, skip.");
+                    log.info("Duplicate entry, skip.");
                 }
             }
             nImported += klines.size();
