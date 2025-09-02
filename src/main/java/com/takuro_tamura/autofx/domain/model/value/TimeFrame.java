@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -43,8 +44,8 @@ public enum TimeFrame {
             case HOUR4 -> original.withHour((original.getHour() / 4) * 4)
                 .withMinute(0).withSecond(0).withNano(0);
             case DAY -> original.truncatedTo(ChronoUnit.DAYS);
-            case WEEK -> original.truncatedTo(ChronoUnit.WEEKS);
-            case MONTH -> original.truncatedTo(ChronoUnit.MONTHS);
+            case WEEK -> original.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+            case MONTH -> original.withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
         };
     }
 }
