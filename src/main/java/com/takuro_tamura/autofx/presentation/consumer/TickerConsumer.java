@@ -15,8 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -27,42 +28,41 @@ public class TickerConsumer {
     private final TradeApplicationService tradeApplicationService;
     private final ChartConfigParameterService chartConfigParameterService;
     private final TradeConfigParameterService tradeConfigParameterService;
-    private final Executor executor = Executors.newSingleThreadExecutor();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     @PostConstruct
     public void init() {
-        executor.execute(this::eventLoop);
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                consume();
+            } catch (Exception e) {
+                log.error("An error occurred in the event loop", e);
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
-    private void eventLoop() {
-        log.info("Event loop started");
-        while (true) {
-            final List<Ticker> tickers = publicApi.getTickers();
-            for (Ticker ticker : tickers) {
-                final List<TimeFrame> timeFrames = chartConfigParameterService.getTargetTimeFrames();
-                final TimeFrame tradeTargetTimeFrame = tradeConfigParameterService.getTargetTimeFrame();
+    private void consume() {
+        final List<Ticker> tickers = publicApi.getTickers();
+        for (Ticker ticker : tickers) {
+            final List<TimeFrame> timeFrames = chartConfigParameterService.getTargetTimeFrames();
+            final TimeFrame tradeTargetTimeFrame = tradeConfigParameterService.getTargetTimeFrame();
 
-                for (TimeFrame timeFrame : timeFrames) {
-                    final boolean created;
+            for (TimeFrame timeFrame : timeFrames) {
+                final boolean created;
+                try {
+                    created = candleApplicationService.upsertCandle(new CandleUpsertCommand(ticker, timeFrame));
+                } catch (Exception e) {
+                    log.warn("Failed to upsert candle", e);
+                    continue;
+                }
+
+                if (tradeTargetTimeFrame == timeFrame && created) {
                     try {
-                        created = candleApplicationService.upsertCandle(new CandleUpsertCommand(ticker, timeFrame));
+                        tradeApplicationService.trade();
                     } catch (Exception e) {
-                        log.warn("Failed to upsert candle", e);
-                        continue;
-                    }
-
-                    if (tradeTargetTimeFrame == timeFrame && created) {
-                        try {
-                            tradeApplicationService.trade();
-                        } catch (Exception e) {
-                            log.error("An error occurred while trading", e);
-                        }
+                        log.error("An error occurred while trading", e);
                     }
                 }
-            }
-            try {
-                Thread.sleep(1000L);
-            } catch (InterruptedException ignored) {
             }
         }
     }
