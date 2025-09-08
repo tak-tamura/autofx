@@ -42,7 +42,11 @@ const RHFNumberInput: React.FC<{
         render={({ field: { onChange, value } }) => (
           <NumberInput
             value={value ?? ""}
-            onChange={(_, num) => onChange(Number.isNaN(num) ? undefined : num)}
+            onChange={(valueStr) => onChange(valueStr)}
+            onBlur={() => {
+              const n = parseFloat(value);
+              if (!Number.isNaN(n)) onChange(n);
+            }}
             step={step}
             min={min}
             max={max}
