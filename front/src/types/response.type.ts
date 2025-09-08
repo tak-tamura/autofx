@@ -1,4 +1,5 @@
 import { Candle } from "./candle";
+import { CurrencyPair, TimeFrame } from "./enum.type";
 
 export type ChartApiResponse = {
     productCode: string;
@@ -64,4 +65,18 @@ export type Order = {
     closeDatetime?: string;
     closePrice?: number;
     //notes?: string;
+};
+
+export type TradeConfigResponse = {
+    targetCurrencyPair: CurrencyPair;
+    backTest: boolean;
+    targetTimeFrame: TimeFrame;
+    maxCandleNum: number;
+    buyPointThreshold: number;
+    sellPointThreshold: number;
+    availableBalanceRate: number;
+    leverage: number;
+    apiCost: number;
+    stopLimit: number;
+    profitLimit: number;
 };

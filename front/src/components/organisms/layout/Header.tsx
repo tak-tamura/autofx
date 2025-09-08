@@ -48,7 +48,7 @@ export const Header: FC = () => {
                         <Link onClick={onClickChart}>チャート</Link>
                     </Box>
                     <Box pr={4}>
-                        <Link onClick={onClickSetting}>設定</Link>
+                        <Link onClick={onClickSetting}>トレード設定</Link>
                     </Box>
                     <Box pr={4}>
                         <Link onClick={onClickLogOut}>ログアウト</Link>

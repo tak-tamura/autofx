@@ -1,3 +1,5 @@
+import { CurrencyPair, TimeFrame } from "./enum.type";
+
 export type GetChartDateRequest = {
     currencyPair: string;
     limit: number;
@@ -36,4 +38,18 @@ export type MacdParams = {
     inFastPeriod: number;
     inSlowPeriod: number;
     inSignalPeriod: number;
+};
+
+export type TradeConfigUpdateRequest = {
+    targetCurrencyPair: CurrencyPair;
+    backTest: boolean;
+    targetTimeFrame: TimeFrame;
+    maxCandleNum: number;
+    buyPointThreshold: number;
+    sellPointThreshold: number;
+    availableBalanceRate: number;
+    leverage: number;
+    apiCost: number;
+    stopLimit: number;
+    profitLimit: number;
 };

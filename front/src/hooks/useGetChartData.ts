@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import { useCallback, useState } from "react";
-import { ChartApiResponse } from "../types/chartApiResponse";
+import { ChartApiResponse } from "../types/response.type";
 import { GetChartDateRequest } from "../types/requests";
 
 type Row = Array<Date | number | string | null>;

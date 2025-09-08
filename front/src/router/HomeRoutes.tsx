@@ -1,6 +1,5 @@
 import { Charts } from "../components/pages/Charts";
-import { Home } from "../components/pages/Home";
-import { Setting } from "../components/pages/Setting";
+import { TradeSetting } from "../components/pages/TradeSetting";
 
 export const homeRoutes = [
     {
@@ -11,6 +10,6 @@ export const homeRoutes = [
     {
         path: "setting",
         index: false,
-        children: <Setting />,
+        children: <TradeSetting />,
     },
 ];
