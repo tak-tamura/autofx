@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
@@ -109,6 +110,7 @@ public class OrderService {
 
     public void makeStopAndProfitOrder(Order order) {
         final BigDecimal atr = calculateAtr();
+        log.info("Calculated ATR: {}", atr.doubleValue());
 
         final double stopPrice = calculateStopPrice(
             order.getFillPrice().getValue(),
@@ -186,7 +188,7 @@ public class OrderService {
 
     private double calculateStopPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
         if (side == OrderSide.BUY) {
-            return price.subtract(limit.multiply(atr)).doubleValue();
+            return price.subtract(limit.multiply(atr)).setScale(3, RoundingMode.DOWN).doubleValue();
         } else {
             return price.add(limit.multiply(atr)).doubleValue();
         }
@@ -194,7 +196,7 @@ public class OrderService {
 
     private double calculateLimitPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
         if (side == OrderSide.BUY) {
-            return price.add(limit.multiply(atr)).doubleValue();
+            return price.add(limit.multiply(atr)).setScale(3, RoundingMode.DOWN).doubleValue();
         } else {
             return price.subtract(limit.multiply(atr)).doubleValue();
         }
