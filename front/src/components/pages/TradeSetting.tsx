@@ -243,7 +243,7 @@ export const TradeSetting: FC = () => {
               control={control}
               label="Stop Limit"
               min={0}
-              max={1}
+              max={100}
               step={0.01}
               precision={2}
               isInvalid={!!errors.stopLimit}
@@ -257,7 +257,7 @@ export const TradeSetting: FC = () => {
               control={control}
               label="Profit Limit"
               min={0}
-              max={1}
+              max={100}
               step={0.01}
               precision={2}
               isInvalid={!!errors.profitLimit}
