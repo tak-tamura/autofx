@@ -36,4 +36,7 @@ public class TradeConfigUpdateCommand {
 
     @Min(0)
     private double profitLimit;
+
+    @Min(1)
+    private int atrPeriod;
 }

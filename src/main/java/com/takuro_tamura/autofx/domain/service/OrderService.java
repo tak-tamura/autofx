@@ -29,6 +29,7 @@ public class OrderService {
     private final Logger log = LoggerFactory.getLogger(OrderService.class);
     private final OrderRepository orderRepository;
     private final PrivateApi privateApi;
+    private final CandleService candleService;
     private final RedisCacheService redisCacheService;
     private final TradeConfigParameterService tradeConfigParameterService;
 
@@ -107,17 +108,23 @@ public class OrderService {
     }
 
     public void makeStopAndProfitOrder(Order order) {
+        final BigDecimal atr = calculateAtr();
+
         final double stopPrice = calculateStopPrice(
             order.getFillPrice().getValue(),
             tradeConfigParameterService.getStopLimit(),
+            atr,
             order.getSide()
         );
+        log.info("Calculated stopPrice: {}", stopPrice);
 
         final double limitPrice = calculateLimitPrice(
             order.getFillPrice().getValue(),
             tradeConfigParameterService.getProfitLimit(),
+            atr,
             order.getSide()
         );
+        log.info("Calculated limitPrice: {}", limitPrice);
 
 
         final CloseOrderRequest request = CloseOrderRequest.builder()
@@ -177,19 +184,30 @@ public class OrderService {
         );
     }
 
-    private double calculateStopPrice(BigDecimal price, BigDecimal limit, OrderSide side) {
+    private double calculateStopPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
         if (side == OrderSide.BUY) {
-            return price.subtract(limit).doubleValue();
+            return price.subtract(limit.multiply(atr)).doubleValue();
         } else {
-            return price.add(limit).doubleValue();
+            return price.add(limit.multiply(atr)).doubleValue();
         }
     }
 
-    private double calculateLimitPrice(BigDecimal price, BigDecimal limit, OrderSide side) {
+    private double calculateLimitPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
         if (side == OrderSide.BUY) {
-            return price.add(limit).doubleValue();
+            return price.add(limit.multiply(atr)).doubleValue();
         } else {
-            return price.subtract(limit).doubleValue();
+            return price.subtract(limit.multiply(atr)).doubleValue();
         }
+    }
+
+    private BigDecimal calculateAtr() {
+        final int atrPeriod = tradeConfigParameterService.getAtrPeriod();
+        final double[] trValues = candleService.getTR(atrPeriod);
+        double atr = 0.0;
+        for (double tr : trValues) {
+            atr += tr;
+        }
+        atr /= atrPeriod;
+        return BigDecimal.valueOf(atr);
     }
 }

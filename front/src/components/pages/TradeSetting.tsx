@@ -93,7 +93,8 @@ export const TradeSetting: FC = () => {
         leverage: tradeConfig.leverage,
         apiCost: tradeConfig.apiCost,
         stopLimit: tradeConfig.stopLimit,
-        profitLimit: tradeConfig.profitLimit
+        profitLimit: tradeConfig.profitLimit,
+        atrPeriod: tradeConfig.atrPeriod
       });
     }
   }, [tradeConfig, reset]);
@@ -262,6 +263,20 @@ export const TradeSetting: FC = () => {
               isInvalid={!!errors.profitLimit}
               error={errors.profitLimit?.message}
               placeholder="0.15"
+            />
+
+            {/* ATR Period */}
+            <RHFNumberInput 
+              name="atrPeriod"
+              control={control}
+              label="ATR Period"
+              min={1}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.atrPeriod}
+              error={errors.atrPeriod?.message}
+              placeholder="14"
             />
 
             <Button type="submit" colorScheme="teal" isLoading={isSubmitting}>保存</Button>

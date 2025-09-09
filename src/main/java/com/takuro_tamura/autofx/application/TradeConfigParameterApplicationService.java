@@ -26,6 +26,7 @@ public class TradeConfigParameterApplicationService {
             .apiCost(tradeConfigParameterService.getApiCost().doubleValue())
             .stopLimit(tradeConfigParameterService.getStopLimit().doubleValue())
             .profitLimit(tradeConfigParameterService.getProfitLimit().doubleValue())
+            .atrPeriod(tradeConfigParameterService.getAtrPeriod())
             .build();
     }
 
@@ -62,6 +63,9 @@ public class TradeConfigParameterApplicationService {
         }
         if (!tradeConfigParameterService.updateProfitLimit(command.getProfitLimit())) {
             log.warn("Failed to update profit limit");
+        }
+        if (!tradeConfigParameterService.updateAtrPeriod(command.getAtrPeriod())) {
+            log.warn("Failed to update ATR period");
         }
     }
 }

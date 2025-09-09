@@ -79,4 +79,5 @@ export type TradeConfigResponse = {
     apiCost: number;
     stopLimit: number;
     profitLimit: number;
+    atrPeriod: number;
 };

@@ -52,4 +52,5 @@ export type TradeConfigUpdateRequest = {
     apiCost: number;
     stopLimit: number;
     profitLimit: number;
+    atrPeriod: number;
 };

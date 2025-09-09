@@ -106,4 +106,12 @@ public class TradeConfigParameterService {
     public boolean updateProfitLimit(double profitLimit) {
         return configParameterService.updateConfigParameter("TRADE.PROFIT_LIMIT", String.valueOf(profitLimit));
     }
+
+    public int getAtrPeriod() {
+        return configParameterService.getInt("TRADE.ATR_PERIOD", 14);
+    }
+
+    public boolean updateAtrPeriod(int atrPeriod) {
+        return configParameterService.updateConfigParameter("TRADE.ATR_PERIOD", String.valueOf(atrPeriod));
+    }
 }

@@ -16,5 +16,6 @@ public record TradeConfigResponse(
     double leverage,
     double apiCost,
     double stopLimit,
-    double profitLimit
+    double profitLimit,
+    int atrPeriod
 ) {}
