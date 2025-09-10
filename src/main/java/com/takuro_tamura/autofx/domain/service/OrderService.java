@@ -16,6 +16,7 @@ import com.takuro_tamura.autofx.infrastructure.external.request.CloseOrderReques
 import com.takuro_tamura.autofx.infrastructure.external.request.OrderRequest;
 import com.takuro_tamura.autofx.infrastructure.external.response.OrderResponse;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.weaver.ast.Or;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -187,19 +188,23 @@ public class OrderService {
     }
 
     private double calculateStopPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
-        if (side == OrderSide.BUY) {
-            return price.subtract(limit.multiply(atr)).setScale(3, RoundingMode.DOWN).doubleValue();
-        } else {
-            return price.add(limit.multiply(atr)).doubleValue();
-        }
+        final BigDecimal raw = (side == OrderSide.BUY)
+            ? price.subtract(limit.multiply(atr))
+            : price.add(limit.multiply(atr));
+
+        final BigDecimal scaled = raw.setScale(3, RoundingMode.DOWN);
+
+        return scaled.doubleValue();
     }
 
     private double calculateLimitPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
-        if (side == OrderSide.BUY) {
-            return price.add(limit.multiply(atr)).setScale(3, RoundingMode.DOWN).doubleValue();
-        } else {
-            return price.subtract(limit.multiply(atr)).doubleValue();
-        }
+        final BigDecimal raw = (side == OrderSide.BUY)
+            ? price.add(limit.multiply(atr))
+            : price.subtract(limit.multiply(atr));
+
+        final BigDecimal scaled = raw.setScale(3, RoundingMode.DOWN);
+
+        return scaled.doubleValue();
     }
 
     private BigDecimal calculateAtr() {
