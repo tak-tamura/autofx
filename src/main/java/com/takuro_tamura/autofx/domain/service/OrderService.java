@@ -38,23 +38,36 @@ public class OrderService {
         }
 
         // 利益確定・損切りラインに達していたらclose
-        final BigDecimal profitLimit = tradeConfigParameterService.getProfitLimit();
-        final BigDecimal stopLimit = tradeConfigParameterService.getStopLimit();
+        final BigDecimal atr = calculateAtr();
+
+        final double stopPrice = calculateStopPrice(
+            order.getFillPrice().getValue(),
+            tradeConfigParameterService.getStopLimit(),
+            atr,
+            order.getSide()
+        );
+
+        final double limitPrice = calculateLimitPrice(
+            order.getFillPrice().getValue(),
+            tradeConfigParameterService.getProfitLimit(),
+            atr,
+            order.getSide()
+        );
 
         if (order.getSide() == OrderSide.BUY) {
             // 利益確定
-            if (currentPrice.subtract(order.getFillPrice()).getValue().compareTo(profitLimit) >= 0) {
+            if (currentPrice.getValue().doubleValue() >= limitPrice) {
                 return true;
             }
             // 損切り
-            return order.getFillPrice().subtract(currentPrice).getValue().compareTo(stopLimit) >= 0;
+            return currentPrice.getValue().doubleValue() <= stopPrice;
         } else {
             // 利益確定
-            if (order.getFillPrice().subtract(currentPrice).getValue().compareTo(profitLimit) >= 0) {
+            if (currentPrice.getValue().doubleValue() <= limitPrice) {
                 return true;
             }
             // 損切り
-            return currentPrice.subtract(order.getFillPrice()).getValue().compareTo(stopLimit) >= 0;
+            return currentPrice.getValue().doubleValue() >= stopPrice;
         }
     }
 
@@ -152,16 +165,19 @@ public class OrderService {
     }
 
     public void handleBackTestOrder(OrderSide side, List<Order> orders, Order lastOrder, Candle candle) {
-        if (shouldCloseOrder(lastOrder, candle.getClose())) {
-            lastOrder.close(candle.getTime(), candle.getClose());
+        if (canMakeNewOrder(lastOrder)) {
+            final Order order = createDummyOrder(candle, side, candle.getClose());
+            orders.add(order);
+            log.info("Make new order at {}, side: {}, price: {}", candle.getTime(), side, candle.getClose());
         } else {
-            if (canMakeNewOrder(lastOrder)) {
-                final Order order = createDummyOrder(candle, side, candle.getClose());
-                orders.add(order);
-            } else {
-                if (lastOrder != null && lastOrder.getSide() != side) {
-                    lastOrder.close(candle.getTime(), candle.getClose());
-                }
+            if (lastOrder != null && lastOrder.getSide() != side) {
+                lastOrder.close(candle.getTime(), candle.getClose());
+                log.info("Close order at {}, side: {}, price: {}, profit: {}",
+                    candle.getTime(),
+                    lastOrder.getSide(),
+                    candle.getClose(),
+                    lastOrder.calculateProfit()
+                );
             }
         }
     }

@@ -36,7 +36,6 @@ class OrderServiceTest {
         when(tradeConfigParameterService.getProfitLimit()).thenReturn(BigDecimal.valueOf(3.0));
         when(tradeConfigParameterService.getAtrPeriod()).thenReturn(7);
         orderService = new OrderService(
-            null,
             privateApi,
             candleService,
             redisCacheService,

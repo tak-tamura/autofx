@@ -51,6 +51,19 @@ public class BackTestService {
             final Candle candle = candles.get(i);
             lastOrder = orders.size() > 0 ? orders.get(orders.size() - 1) : null;
 
+            if (orderService.shouldCloseOrder(lastOrder, candle.getClose())) {
+                if (lastOrder != null) {
+                    lastOrder.close(candle.getTime(), candle.getClose());
+                    log.info("BackTest Close Order at {}, side: {}, price: {}, profit: {}",
+                        candle.getTime(),
+                        lastOrder.getSide(),
+                        candle.getClose(),
+                        lastOrder.calculateProfit()
+                    );
+                    continue;
+                }
+            }
+
             final TradeSignal signal = strategy.checkTradeSignal(closePrices, i);
 
             switch (signal) {
