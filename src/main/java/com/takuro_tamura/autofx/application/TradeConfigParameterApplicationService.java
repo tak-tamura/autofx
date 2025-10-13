@@ -27,6 +27,14 @@ public class TradeConfigParameterApplicationService {
             .stopLimit(tradeConfigParameterService.getStopLimit().doubleValue())
             .profitLimit(tradeConfigParameterService.getProfitLimit().doubleValue())
             .atrPeriod(tradeConfigParameterService.getAtrPeriod())
+            .emaPeriod1(tradeConfigParameterService.getEmaPeriod1())
+            .emaPeriod2(tradeConfigParameterService.getEmaPeriod2())
+            .bBandsN(tradeConfigParameterService.getBBandsN())
+            .bBandsK(tradeConfigParameterService.getBBandsK())
+            .rsiPeriod(tradeConfigParameterService.getRsiPeriod())
+            .macdFastPeriod(tradeConfigParameterService.getMacdFastPeriod())
+            .macdSlowPeriod(tradeConfigParameterService.getMacdSlowPeriod())
+            .macdSignalPeriod(tradeConfigParameterService.getMacdSignalPeriod())
             .build();
     }
 
@@ -66,6 +74,30 @@ public class TradeConfigParameterApplicationService {
         }
         if (!tradeConfigParameterService.updateAtrPeriod(command.getAtrPeriod())) {
             log.warn("Failed to update ATR period");
+        }
+        if (!tradeConfigParameterService.updateEmaPeriod1(command.getEmaPeriod1())) {
+            log.warn("Failed to update EMA period 1");
+        }
+        if (!tradeConfigParameterService.updateEmaPeriod2(command.getEmaPeriod2())) {
+            log.warn("Failed to update EMA period 2");
+        }
+        if (!tradeConfigParameterService.updateBBandsN(command.getBBandsN())) {
+            log.warn("Failed to update Bollinger Bands N");
+        }
+        if (!tradeConfigParameterService.updateBBandsK(command.getBBandsK())) {
+            log.warn("Failed to update Bollinger Bands K");
+        }
+        if (!tradeConfigParameterService.updateRsiPeriod(command.getRsiPeriod())) {
+            log.warn("Failed to update RSI period");
+        }
+        if (!tradeConfigParameterService.updateMacdFastPeriod(command.getMacdFastPeriod())) {
+            log.warn("Failed to update MACD fast period");
+        }
+        if (!tradeConfigParameterService.updateMacdSlowPeriod(command.getMacdSlowPeriod())) {
+            log.warn("Failed to update MACD slow period");
+        }
+        if (!tradeConfigParameterService.updateMacdSignalPeriod(command.getMacdSignalPeriod())) {
+            log.warn("Failed to update MACD signal period");
         }
     }
 }

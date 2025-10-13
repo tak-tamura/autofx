@@ -114,4 +114,68 @@ public class TradeConfigParameterService {
     public boolean updateAtrPeriod(int atrPeriod) {
         return configParameterService.updateConfigParameter("TRADE.ATR_PERIOD", String.valueOf(atrPeriod));
     }
+
+    public int getEmaPeriod1() {
+        return configParameterService.getInt("TRADE.EMA_PERIOD1", 8);
+    }
+
+    public boolean updateEmaPeriod1(int emaPeriod1) {
+        return configParameterService.updateConfigParameter("TRADE.EMA_PERIOD1", String.valueOf(emaPeriod1));
+    }
+
+    public int getEmaPeriod2() {
+        return configParameterService.getInt("TRADE.EMA_PERIOD2", 21);
+    }
+
+    public boolean updateEmaPeriod2(int emaPeriod2) {
+        return configParameterService.updateConfigParameter("TRADE.EMA_PERIOD2", String.valueOf(emaPeriod2));
+    }
+
+    public int getBBandsN() {
+        return configParameterService.getInt("TRADE.BBANDS_N", 20);
+    }
+
+    public boolean updateBBandsN(int bBandsN) {
+        return configParameterService.updateConfigParameter("TRADE.BBANDS_N", String.valueOf(bBandsN));
+    }
+
+    public double getBBandsK() {
+        return configParameterService.getDouble("TRADE.BBANDS_K", 2.0);
+    }
+
+    public boolean updateBBandsK(double bBandsK) {
+        return configParameterService.updateConfigParameter("TRADE.BBANDS_K", String.valueOf(bBandsK));
+    }
+
+    public int getRsiPeriod() {
+        return configParameterService.getInt("TRADE.RSI_PERIOD", 14);
+    }
+
+    public boolean updateRsiPeriod(int rsiPeriod) {
+        return configParameterService.updateConfigParameter("TRADE.RSI_PERIOD", String.valueOf(rsiPeriod));
+    }
+
+    public int getMacdFastPeriod() {
+        return configParameterService.getInt("TRADE.MACD_FAST_PERIOD", 12);
+    }
+
+    public boolean updateMacdFastPeriod(int macdFastPeriod) {
+        return configParameterService.updateConfigParameter("TRADE.MACD_FAST_PERIOD", String.valueOf(macdFastPeriod));
+    }
+
+    public int getMacdSlowPeriod() {
+        return configParameterService.getInt("TRADE.MACD_SLOW_PERIOD", 26);
+    }
+
+    public boolean updateMacdSlowPeriod(int macdSlowPeriod) {
+        return configParameterService.updateConfigParameter("TRADE.MACD_SLOW_PERIOD", String.valueOf(macdSlowPeriod));
+    }
+
+    public int getMacdSignalPeriod() {
+        return configParameterService.getInt("TRADE.MACD_SIGNAL_PERIOD", 9);
+    }
+
+    public boolean updateMacdSignalPeriod(int macdSignalPeriod) {
+        return configParameterService.updateConfigParameter("TRADE.MACD_SIGNAL_PERIOD", String.valueOf(macdSignalPeriod));
+    }
 }

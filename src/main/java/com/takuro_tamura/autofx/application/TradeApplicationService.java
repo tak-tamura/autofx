@@ -1,6 +1,5 @@
 package com.takuro_tamura.autofx.application;
 
-import com.takuro_tamura.autofx.domain.indicator.*;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
 import com.takuro_tamura.autofx.domain.model.entity.Order;
@@ -8,11 +7,12 @@ import com.takuro_tamura.autofx.domain.model.entity.OrderRepository;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
-import com.takuro_tamura.autofx.domain.parameter.TradeParameter;
+import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
+import com.takuro_tamura.autofx.domain.service.BackTestService;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
-import com.takuro_tamura.autofx.domain.service.TradeParameterService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
+import com.takuro_tamura.autofx.domain.strategy.Strategy;
 import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
 import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
 import com.takuro_tamura.autofx.infrastructure.external.adapter.PrivateApi;
@@ -39,8 +39,9 @@ public class TradeApplicationService {
     private final Logger log = LoggerFactory.getLogger(TradeApplicationService.class);
     private final CandleService candleService;
     private final OrderService orderService;
-    private final TradeParameterService tradeParameterService;
     private final TradeConfigParameterService tradeConfigParameterService;
+    private final BackTestService backTestService;
+    private final Strategy strategy;
     private final CandleRepository candleRepository;
     private final OrderRepository orderRepository;
     private final PrivateApi privateApi;
@@ -48,12 +49,7 @@ public class TradeApplicationService {
     private final RedisCacheService redisCacheService;
 
     @Transactional
-    public synchronized void trade() {
-        if (tradeConfigParameterService.isBackTest()) {
-            log.info("Back test mode is on, skip trading");
-            return;
-        }
-
+    public void trade() {
         final Boolean tradeEnabled = redisCacheService.<Boolean>get(CacheKey.TRADE_ENABLED.getKey())
             .orElse(Boolean.TRUE);
         if (!tradeEnabled) {
@@ -85,25 +81,23 @@ public class TradeApplicationService {
             return;
         }
 
-        final Optional<TradeParameter> parameterOptional = tradeParameterService.optimizeParameter(candles);
-        final TradeParameter parameter;
-        if (parameterOptional.isPresent()) {
-            parameter = parameterOptional.get();
-        } else {
-            log.info("Cannot create trade parameter, abort trading");
+        final double[] closePrices = candleService.extractClosePrices(candles);
+
+        final double backTestResult = backTestService.getBackTestProfitLoss(
+            targetPair,
+            targetTimeFrame,
+            tradeConfigParameterService.getMaxCandleNum()
+        );
+
+        if (backTestResult <= 0.0) {
+            log.info("Back test result is no profit({}), abort trading", backTestResult);
             return;
         }
 
-        log.info("Trade parameter: {}", parameter);
+        final TradeSignal signal = strategy.checkTradeSignal(closePrices, closePrices.length - 1);
 
-        final double[] closePrices = candleService.extractClosePrices(candles);
-        final Indicators indicators = prepareIndicators(parameter, closePrices);
-
-        final int buyPoint = checkBuySignal(indicators, parameter, latestCandle, closePrices);
-        final int sellPoint = checkSellSignal(indicators, parameter, latestCandle, closePrices);
-
-        if (buyPoint >= tradeConfigParameterService.getBuyPointThreshold()) {
-            if (orderService.canOrder(lastOrder.orElse(null))) {
+        if (signal == TradeSignal.BUY) {
+            if (orderService.canMakeNewOrder(lastOrder.orElse(null))) {
                 makeOrder(OrderSide.BUY, targetPair);
             } else {
                 lastOrder.ifPresent(order -> {
@@ -112,8 +106,8 @@ public class TradeApplicationService {
                     }
                 });
             }
-        } else if (sellPoint >= tradeConfigParameterService.getSellPointThreshold()) {
-            if (orderService.canOrder(lastOrder.orElse(null))) {
+        } else if (signal == TradeSignal.SELL) {
+            if (orderService.canMakeNewOrder(lastOrder.orElse(null))) {
                 makeOrder(OrderSide.SELL, targetPair);
             } else {
                 lastOrder.ifPresent(order -> {
@@ -125,124 +119,6 @@ public class TradeApplicationService {
         } else {
             log.info("Skip trading this time because of no trading signal");
         }
-    }
-
-    private int checkBuySignal(Indicators indicators, TradeParameter parameter, Candle candle, double[] closePrices) {
-        int buyPoint = 0;
-        if (parameter.getEma().isEnable()) {
-            if (indicators.ema.shouldBuy()) {
-                log.info("Got buy signal by EMA");
-                buyPoint++;
-            }
-        }
-
-        if (parameter.getBBands().isEnable()) {
-            if (indicators.bBands.shouldBuy(closePrices)) {
-                log.info("Got buy signal by BBands");
-                buyPoint++;
-            }
-        }
-
-        if (parameter.getIchimoku().isEnable()) {
-            if (indicators.ichimoku.shouldBuy(
-                candle.getHigh().getValue().doubleValue(),
-                candle.getLow().getValue().doubleValue()
-            )) {
-                log.info("Got buy signal by IchimokuCloud");
-                buyPoint++;
-            }
-        }
-
-        if (parameter.getMacd().isEnable()) {
-            if (indicators.macd.shouldBuy()) {
-                log.info("Got buy signal by MACD");
-                buyPoint++;
-            }
-        }
-
-        if (parameter.getRsi().isEnable()) {
-            if (indicators.rsi.shouldBuy(parameter.getRsi().getBuyThread())) {
-                log.info("Got buy signal by RSI");
-                buyPoint++;
-            }
-        }
-
-        return buyPoint;
-    }
-
-    private int checkSellSignal(Indicators indicators, TradeParameter parameter, Candle candle, double[] closePrices) {
-        int sellPoint = 0;
-        if (parameter.getEma().isEnable()) {
-            if (indicators.ema.shouldSell()) {
-                log.info("Got sell signal by EMA");
-                sellPoint++;
-            }
-        }
-
-        if (parameter.getBBands().isEnable()) {
-            if (indicators.bBands.shouldSell(closePrices)) {
-                log.info("Got sell signal by BBands");
-                sellPoint++;
-            }
-        }
-
-        if (parameter.getIchimoku().isEnable()) {
-            if (indicators.ichimoku.shouldSell(
-                candle.getHigh().getValue().doubleValue(),
-                candle.getLow().getValue().doubleValue()
-            )) {
-                log.info("Got sell signal by IchimokuCloud");
-                sellPoint++;
-            }
-        }
-
-        if (parameter.getMacd().isEnable()) {
-            if (indicators.macd.shouldSell()) {
-                log.info("Got sell signal by MACD");
-                sellPoint++;
-            }
-        }
-
-        if (parameter.getRsi().isEnable()) {
-            if (indicators.rsi.shouldSell(parameter.getRsi().getBuyThread())) {
-                log.info("Got sell signal by RSI");
-                sellPoint++;
-            }
-        }
-
-        return sellPoint;
-    }
-
-    private Indicators prepareIndicators(TradeParameter parameter, double[] closePrices) {
-        final Ema ema = parameter.getEma().isEnable() ? new Ema(
-            new int[]{
-                parameter.getEma().getPeriod1(),
-                parameter.getEma().getPeriod2()
-            },
-            closePrices
-        ) : null;
-
-        final BBands bBands = parameter.getBBands().isEnable() ? new BBands(
-            parameter.getBBands().getN(),
-            parameter.getBBands().getK(),
-            closePrices
-        ) : null;
-
-        final IchimokuCloud ichimoku = parameter.getIchimoku().isEnable() ? new IchimokuCloud(closePrices) : null;
-
-        final Macd macd = parameter.getMacd().isEnable() ? new Macd(
-            parameter.getMacd().getFastPeriod(),
-            parameter.getMacd().getSlowPeriod(),
-            parameter.getMacd().getSignalPeriod(),
-            closePrices
-        ) : null;
-
-        final Rsi rsi = parameter.getRsi().isEnable() ? new Rsi(
-            parameter.getRsi().getPeriod(),
-            closePrices
-        ) : null;
-
-        return new Indicators(ema, bBands, ichimoku, macd, rsi);
     }
 
     private void makeOrder(OrderSide type, CurrencyPair targetPair) {
@@ -285,12 +161,4 @@ public class TradeApplicationService {
         // 取引可能金額 / 1通貨あたりの金額が取引数量
         return availableAmount.divide(priceWithApiCost, RoundingMode.HALF_DOWN).intValue();
     }
-
-    private record Indicators(
-        Ema ema,
-        BBands bBands,
-        IchimokuCloud ichimoku,
-        Macd macd,
-        Rsi rsi
-    ) {}
 }

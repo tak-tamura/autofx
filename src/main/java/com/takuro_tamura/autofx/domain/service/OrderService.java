@@ -2,7 +2,6 @@ package com.takuro_tamura.autofx.domain.service;
 
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.Order;
-import com.takuro_tamura.autofx.domain.model.entity.OrderRepository;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderStatus;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
@@ -16,7 +15,6 @@ import com.takuro_tamura.autofx.infrastructure.external.request.CloseOrderReques
 import com.takuro_tamura.autofx.infrastructure.external.request.OrderRequest;
 import com.takuro_tamura.autofx.infrastructure.external.response.OrderResponse;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.weaver.ast.Or;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -29,7 +27,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderService {
     private final Logger log = LoggerFactory.getLogger(OrderService.class);
-    private final OrderRepository orderRepository;
     private final PrivateApi privateApi;
     private final CandleService candleService;
     private final RedisCacheService redisCacheService;
@@ -39,11 +36,6 @@ public class OrderService {
         if (order == null || order.getStatus() != OrderStatus.FILLED) {
             return false;
         }
-
-        // シグナルがオーダータイプと反していればcloseする
-//        if (signal != order.getSide()) {
-//            return true;
-//        }
 
         // 利益確定・損切りラインに達していたらclose
         final BigDecimal profitLimit = tradeConfigParameterService.getProfitLimit();
@@ -66,7 +58,7 @@ public class OrderService {
         }
     }
 
-    public boolean canOrder(Order lastOrder) {
+    public boolean canMakeNewOrder(Order lastOrder) {
         return lastOrder == null || lastOrder.getStatus().isCompleted();
     }
 
@@ -129,7 +121,6 @@ public class OrderService {
         );
         log.info("Calculated limitPrice: {}", limitPrice);
 
-
         final CloseOrderRequest request = CloseOrderRequest.builder()
             .currencyPair(order.getCurrencyPair())
             .executionType(ExecutionType.OCO)
@@ -138,7 +129,6 @@ public class OrderService {
             .stopPrice(stopPrice)
             .limitPrice(limitPrice)
             .build();
-
 
         final List<OrderResponse> response = privateApi.closeOrder(request);
         log.info("Sent OCO order request, orderId: {}", order.getOrderId());
@@ -165,7 +155,7 @@ public class OrderService {
         if (shouldCloseOrder(lastOrder, candle.getClose())) {
             lastOrder.close(candle.getTime(), candle.getClose());
         } else {
-            if (canOrder(lastOrder)) {
+            if (canMakeNewOrder(lastOrder)) {
                 final Order order = createDummyOrder(candle, side, candle.getClose());
                 orders.add(order);
             } else {

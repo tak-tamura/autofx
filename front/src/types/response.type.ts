@@ -80,4 +80,12 @@ export type TradeConfigResponse = {
     stopLimit: number;
     profitLimit: number;
     atrPeriod: number;
+    emaPeriod1: number;
+    emaPeriod2: number;
+    bBandsN: number;
+    bBandsK: number;
+    rsiPeriod: number;
+    macdFastPeriod: number;
+    macdSlowPeriod: number;
+    macdSignalPeriod: number;
 };

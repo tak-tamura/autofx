@@ -4,9 +4,11 @@ import com.takuro_tamura.autofx.presentation.controller.response.RsiRecord;
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 import com.tictactec.ta.lib.RetCode;
+import lombok.Getter;
 
 public class Rsi {
     private final int period;
+    @Getter
     private final double[] values;
 
     public Rsi(int period, double[] closePrices) {

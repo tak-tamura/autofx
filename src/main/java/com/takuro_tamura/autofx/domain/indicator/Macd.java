@@ -4,13 +4,17 @@ import com.takuro_tamura.autofx.presentation.controller.response.MacdRecord;
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 import com.tictactec.ta.lib.RetCode;
+import lombok.Getter;
 
 public class Macd {
     private final int fastPeriod;
     private final int slowPeriod;
     private final int signalPeriod;
+    @Getter
     private final double[] macd;
+    @Getter
     private final double[] macdSignal;
+    @Getter
     private final double[] macdHist;
 
     public Macd(int fastPeriod, int slowPeriod, int signalPeriod, double[] closePrices) {

@@ -94,7 +94,15 @@ export const TradeSetting: FC = () => {
         apiCost: tradeConfig.apiCost,
         stopLimit: tradeConfig.stopLimit,
         profitLimit: tradeConfig.profitLimit,
-        atrPeriod: tradeConfig.atrPeriod
+        atrPeriod: tradeConfig.atrPeriod,
+        emaPeriod1: tradeConfig.emaPeriod1,
+        emaPeriod2: tradeConfig.emaPeriod2,
+        bBandsN: tradeConfig.bBandsN,
+        bBandsK: tradeConfig.bBandsK,
+        rsiPeriod: tradeConfig.rsiPeriod,
+        macdFastPeriod: tradeConfig.macdFastPeriod,
+        macdSlowPeriod: tradeConfig.macdSlowPeriod,
+        macdSignalPeriod: tradeConfig.macdSignalPeriod
       });
     }
   }, [tradeConfig, reset]);
@@ -277,6 +285,118 @@ export const TradeSetting: FC = () => {
               isInvalid={!!errors.atrPeriod}
               error={errors.atrPeriod?.message}
               placeholder="14"
+            />
+
+            {/* EMA Period 1 */}
+            <RHFNumberInput 
+              name="emaPeriod1"
+              control={control}
+              label="EMA Period1"
+              min={1}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.emaPeriod1}
+              error={errors.emaPeriod1?.message}
+              placeholder="7"
+            />
+
+            {/* EMA Period 2 */}
+            <RHFNumberInput 
+              name="emaPeriod2"
+              control={control}
+              label="EMA Period2"
+              min={1}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.emaPeriod2}
+              error={errors.emaPeriod2?.message}
+              placeholder="14"
+            />
+
+            {/* BBands N */}
+            <RHFNumberInput 
+              name="bBandsN"
+              control={control}
+              label="BBands N"
+              min={0}
+              max={100}
+              step={0.1}
+              precision={1}
+              isInvalid={!!errors.bBandsN}
+              error={errors.bBandsN?.message}
+              placeholder="2.0"
+            />
+
+            {/* BBands K */}
+            <RHFNumberInput 
+              name="bBandsK"
+              control={control}
+              label="BBands K"
+              min={0}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.bBandsK}
+              error={errors.bBandsK?.message}
+              placeholder="20"
+            />
+
+            {/* RSI */}
+            <RHFNumberInput 
+              name="rsiPeriod"
+              control={control}
+              label="RSI Period"
+              min={0}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.rsiPeriod}
+              error={errors.rsiPeriod?.message}
+              placeholder="14"
+            />
+
+            {/* MACD Fast Period */}
+            <RHFNumberInput 
+              name="macdFastPeriod"
+              control={control}
+              label="MACD Fast Period"
+              min={0}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.macdFastPeriod}
+              error={errors.macdFastPeriod?.message}
+              placeholder="12"
+            />
+
+            {/* MACD Slow Period */}
+            <RHFNumberInput 
+              name="macdSlowPeriod"
+              control={control}
+              label="MACD Slow Period"
+              min={0}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.macdSlowPeriod}
+              error={errors.macdSlowPeriod?.message}
+              placeholder="26"
+            />
+
+            {/* MACD Signal Period */}
+            <RHFNumberInput 
+              name="macdSignalPeriod"
+              control={control}
+              label="MACD Signal Period"
+              min={0}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.macdSignalPeriod}
+              error={errors.macdSignalPeriod?.message}
+              placeholder="9"
             />
 
             <Button type="submit" colorScheme="teal" isLoading={isSubmitting}>保存</Button>

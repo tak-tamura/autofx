@@ -17,5 +17,13 @@ public record TradeConfigResponse(
     double apiCost,
     double stopLimit,
     double profitLimit,
-    int atrPeriod
+    int atrPeriod,
+    int emaPeriod1,
+    int emaPeriod2,
+    int bBandsN,
+    double bBandsK,
+    int rsiPeriod,
+    int macdFastPeriod,
+    int macdSlowPeriod,
+    int macdSignalPeriod
 ) {}

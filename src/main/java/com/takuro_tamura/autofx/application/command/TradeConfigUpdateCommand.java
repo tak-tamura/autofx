@@ -1,5 +1,6 @@
 package com.takuro_tamura.autofx.application.command;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import jakarta.validation.constraints.Min;
@@ -39,4 +40,30 @@ public class TradeConfigUpdateCommand {
 
     @Min(1)
     private int atrPeriod;
+
+    @Min(1)
+    private int emaPeriod1;
+
+    @Min(1)
+    private int emaPeriod2;
+
+    @Min(1)
+    @JsonProperty("bBandsN")
+    private int bBandsN;
+
+    @Min(0)
+    @JsonProperty("bBandsK")
+    private double bBandsK;
+
+    @Min(1)
+    private int rsiPeriod;
+
+    @Min(1)
+    private int macdFastPeriod;
+
+    @Min(1)
+    private int macdSlowPeriod;
+
+    @Min(1)
+    private int macdSignalPeriod;
 }
