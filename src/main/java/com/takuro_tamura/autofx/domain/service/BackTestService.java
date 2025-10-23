@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,14 +46,14 @@ public class BackTestService {
         final List<Order> orders = new ArrayList<>();
         Order lastOrder;
 
-        for (int i = 1; i < candles.size(); i++) {
+        for (int i = 1; i < candles.size() - 1; i++) {
             final Candle candle = candles.get(i);
             lastOrder = orders.size() > 0 ? orders.get(orders.size() - 1) : null;
 
             if (orderService.shouldCloseOrder(lastOrder, candle.getClose())) {
                 if (lastOrder != null) {
                     lastOrder.close(candle.getTime(), candle.getClose());
-                    log.info("BackTest Close Order at {}, side: {}, price: {}, profit: {}",
+                    log.debug("BackTest Close Order at {}, side: {}, price: {}, profit: {}",
                         candle.getTime(),
                         lastOrder.getSide(),
                         candle.getClose(),

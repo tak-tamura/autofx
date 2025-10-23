@@ -94,7 +94,7 @@ public class TradeApplicationService {
             return;
         }
 
-        final TradeSignal signal = strategy.checkTradeSignal(closePrices, closePrices.length - 1);
+        final TradeSignal signal = strategy.checkTradeSignal(closePrices, closePrices.length - 2);
 
         if (signal == TradeSignal.BUY) {
             if (orderService.canMakeNewOrder(lastOrder.orElse(null))) {

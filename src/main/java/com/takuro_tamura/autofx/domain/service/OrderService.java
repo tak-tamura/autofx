@@ -168,11 +168,11 @@ public class OrderService {
         if (canMakeNewOrder(lastOrder)) {
             final Order order = createDummyOrder(candle, side, candle.getClose());
             orders.add(order);
-            log.info("Make new order at {}, side: {}, price: {}", candle.getTime(), side, candle.getClose());
+            log.debug("Make new order at {}, side: {}, price: {}", candle.getTime(), side, candle.getClose());
         } else {
             if (lastOrder != null && lastOrder.getSide() != side) {
                 lastOrder.close(candle.getTime(), candle.getClose());
-                log.info("Close order at {}, side: {}, price: {}, profit: {}",
+                log.debug("Close order at {}, side: {}, price: {}, profit: {}",
                     candle.getTime(),
                     lastOrder.getSide(),
                     candle.getClose(),
