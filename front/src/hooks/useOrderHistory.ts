@@ -10,6 +10,7 @@ export type Order = {
   fillPrice: number;
   closeDatetime: string | null;
   closePrice: number | null;
+  profit: number;
 };
 
 export type OrderHistoryResponse = {

@@ -27,7 +27,7 @@ public class OrderHistorySearchApplicationService {
         final BigDecimal profit = orderService.accumulateProfit(foundOrders);
 
         final List<OrderHistorySearchResponse.Order> orders = foundOrders.stream()
-            .limit(command.size())
+            .limit((long) command.size() * (command.page() + 1))
             .map(order -> new OrderHistorySearchResponse.Order(
                 order.getOrderId(),
                 order.getCurrencyPair(),
@@ -37,7 +37,8 @@ public class OrderHistorySearchApplicationService {
                 order.getFillDatetime(),
                 order.getFillPrice().getValue().doubleValue(),
                 order.getCloseDatetime(),
-                order.getClosePrice() != null ? order.getClosePrice().getValue().doubleValue() : null
+                order.getClosePrice() != null ? order.getClosePrice().getValue().doubleValue() : null,
+                order.calculateProfit().doubleValue()
             ))
             .toList();
 

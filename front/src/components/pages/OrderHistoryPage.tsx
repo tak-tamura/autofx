@@ -176,6 +176,7 @@ export const OrderHistoryPage: React.FC = () => {
                   <Th isNumeric>約定価格</Th>
                   <Th>クローズ日時</Th>
                   <Th isNumeric>クローズ価格</Th>
+                  <Th isNumeric>損益</Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -213,11 +214,26 @@ export const OrderHistoryPage: React.FC = () => {
                         ? order.closePrice.toFixed(3)
                         : "-"}
                     </Td>
+                    <Td isNumeric>
+                      <Text
+                        as="span"
+                        fontWeight="bold"
+                        color={
+                          order.profit < 0
+                            ? "red.500"
+                            : order.profit > 0
+                            ? "green.500"
+                            : "gray.700"
+                        }
+                      >
+                        {order.profit.toLocaleString()}
+                      </Text>
+                    </Td>
                   </Tr>
                 ))}
                 {data.orders.length === 0 && (
                   <Tr>
-                    <Td colSpan={9}>
+                    <Td colSpan={10}>
                       <Text align="center" py={4} color="gray.500">
                         該当する注文はありません。
                       </Text>

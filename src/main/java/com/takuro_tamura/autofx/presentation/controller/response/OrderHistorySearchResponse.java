@@ -27,6 +27,7 @@ public record OrderHistorySearchResponse(
         @Nullable
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime closeDatetime,
-        @Nullable Double closePrice
+        @Nullable Double closePrice,
+        double profit
     ) {}
 }

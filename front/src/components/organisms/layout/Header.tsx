@@ -52,7 +52,7 @@ export const Header: FC = () => {
                     <Box pr={4}>
                         <Link onClick={onClickSetting}>トレード設定</Link>
                     </Box>
-                    <Box>
+                    <Box pr={4}>
                         <Link onClick={onClickOrders}>注文履歴</Link>
                     </Box>
                     <Box pr={4}>
