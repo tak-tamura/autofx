@@ -27,7 +27,8 @@ public class OrderHistorySearchApplicationService {
         final BigDecimal profit = orderService.accumulateProfit(foundOrders);
 
         final List<OrderHistorySearchResponse.Order> orders = foundOrders.stream()
-            .limit((long) command.size() * (command.page() + 1))
+            .skip((long) command.size() * (command.page() + 1))
+            .limit(command.size())
             .map(order -> new OrderHistorySearchResponse.Order(
                 order.getOrderId(),
                 order.getCurrencyPair(),
