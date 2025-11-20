@@ -90,6 +90,26 @@ public interface OrderMapper {
     )
     List<OrderDataModel> selectByCurrencyPairAfterTime(CurrencyPair currencyPair, LocalDateTime time);
 
+    @Select(
+        "SELECT " +
+        "    order_id," +
+        "    currency_pair," +
+        "    side, " +
+        "    size, " +
+        "    status, " +
+        "    created_datetime, " +
+        "    fill_datetime, " +
+        "    fill_price, " +
+        "    close_datetime, " +
+        "    close_price " +
+        "FROM " +
+        "   `order` " +
+        "WHERE " +
+        "   created_datetime BETWEEN #{start} AND #{end} " +
+        "ORDER BY created_datetime ASC"
+    )
+    List<OrderDataModel> selectByDateRange(LocalDateTime start, LocalDateTime end);
+
     @Insert(
         "INSERT INTO `order` (" +
         "   order_id," +

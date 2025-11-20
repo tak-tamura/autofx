@@ -15,6 +15,7 @@ public class EmaCrossStrategy implements Strategy {
 
     private final TradeConfigParameterService tradeConfigParameterService;
 
+    @Override
     public TradeSignal checkTradeSignal(double[] closePrices, int index) {
         final int[] emaPeriods = new int[]{
             tradeConfigParameterService.getEmaPeriod1(),

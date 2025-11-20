@@ -13,6 +13,8 @@ public interface OrderRepository {
 
     List<Order> findByCurrencyPairAfterTime(CurrencyPair currencyPair, LocalDateTime time);
 
+    List<Order> findByDateRange(LocalDateTime start, LocalDateTime end);
+
     void save(Order order);
 
     void update(Order order);

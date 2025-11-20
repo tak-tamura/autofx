@@ -44,6 +44,14 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
+    public List<Order> findByDateRange(LocalDateTime start, LocalDateTime end) {
+        return orderMapper.selectByDateRange(start, end)
+            .stream()
+            .map(OrderDataModel::toModel)
+            .toList();
+    }
+
+    @Override
     public void save(Order order) {
         final OrderDataModel entity = new OrderDataModel(order);
         orderMapper.insert(entity);

@@ -13,6 +13,8 @@ export const Header: FC = () => {
 
     const onClickSetting = useCallback(() => navigate("/home/setting"), []);
 
+    const onClickOrders = useCallback(() => navigate("/home/orders"), []);
+
     const onClickLogOut = useCallback(() => {
         logout();
         navigate("/login");
@@ -49,6 +51,9 @@ export const Header: FC = () => {
                     </Box>
                     <Box pr={4}>
                         <Link onClick={onClickSetting}>トレード設定</Link>
+                    </Box>
+                    <Box>
+                        <Link onClick={onClickOrders}>注文履歴</Link>
                     </Box>
                     <Box pr={4}>
                         <Link onClick={onClickLogOut}>ログアウト</Link>
