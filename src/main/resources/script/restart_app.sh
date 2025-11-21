@@ -1,6 +1,6 @@
 #!/bin/bash
 
-JAR_NAME="autofx-0.0.1-SNAPSHOT.jar"
+JAR_NAME="autofx.jar"
 LOG_FILE="nohup.log"
 
 function start_app() {

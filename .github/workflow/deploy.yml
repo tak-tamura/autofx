@@ -1,0 +1,68 @@
+name: Build & Deploy (SSH)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew clean build --no-daemon
+
+      # ビルド成果物をアーティファクトとして保存（任意）
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: build/libs/autofx-*-SNAPSHOT.jar
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: app
+
+      # サーバーに JAR をコピー（SCP）
+      - name: Copy JAR via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          source: "app/*.jar"
+          target: "/home/rocky/deploy/autofx.jar"
+          strip_components: 1
+
+      # サーバーに SSH で入り、サービス再起動
+      - name: Restart service via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            cd /home/rocky/deploy
+            ./restart_app.sh restart
