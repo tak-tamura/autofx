@@ -1,5 +1,4 @@
-import { useToast } from "@chakra-ui/react";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { useCallback } from "react";
 import { TradeConfigUpdateRequest } from "../types/requests";
 

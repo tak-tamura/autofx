@@ -6,10 +6,8 @@ import {
   Flex,
   Input,
   Select,
-  Spacer,
   VStack,
   HStack,
-  Stack,
   Text,
 } from "@chakra-ui/react";
 import { FC, useEffect, useState } from "react";
@@ -71,7 +69,7 @@ interface MacdChartOptions {
 export const Charts: FC = () => {
   const { chartData, rsiChartData, macdChartData, profit, getChartData } = useGetChartData();
 
-  const [chartOptions, setChartOptions] = useState<ChartOptions>({
+  const chartOptions: ChartOptions = {
     legend: "none",
     bar: { groupWidth: "100%" },
     backgroundColor: "#F7FAFC",
@@ -80,9 +78,9 @@ export const Charts: FC = () => {
       risingColor: { strokeWidth: 0, fill: "#0f9d58" },
     },
     series: {},
-  });
+  };
 
-  const [rsiChartOptions, setRsiChartOptions] = useState<RsiChartOptions>({
+  const rsiChartOptions: RsiChartOptions = {
     hAxis: {
       slantedText: false,
     },
@@ -95,9 +93,9 @@ export const Charts: FC = () => {
       1: { color: "#e2431e" },
       2: { color: "black", lineWidth: 1 },
     },
-  });
+  };
 
-  const [macdChartOptions, setMacdChartOptions] = useState<MacdChartOptions>({
+  const macdChartOptions: MacdChartOptions = {
     legend: {
       position: "none",
     },
@@ -107,7 +105,7 @@ export const Charts: FC = () => {
       1: { type: "line", lineWidth: 1 },
       2: { type: "line", lineWidth: 1 },
     },
-  });
+  };
 
   /* ロウソク足チャートのパラメータ */
   const [currencyPair, setCurrencyPair] = useState("USD_JPY");
@@ -136,7 +134,7 @@ export const Charts: FC = () => {
 
   /* Rsiのパラメータ */
   const [enableRsi, setEnableRsi] = useState(false);
-  const [rsiPeriod, setRsiPeriod] = useState(14);
+  const [rsiPeriod, setRsiPeriod] = useState(14); // eslint-disable-line
 
   /* MACDのパラメータ */
   const [enableMacd, setEnableMacd] = useState(false);
@@ -245,6 +243,8 @@ export const Charts: FC = () => {
     inSlowPeriod,
     inSignalPeriod,
     includeOrder,
+    getChartData,
+    chartOptions.series
   ]);
 
   return (

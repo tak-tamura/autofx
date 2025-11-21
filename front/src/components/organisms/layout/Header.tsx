@@ -7,18 +7,18 @@ export const Header: FC = () => {
     const {logout} = useAuth();
     const navigate = useNavigate();
 
-    const onClickHome = useCallback(() => navigate("/home"), []);
+    const onClickHome = useCallback(() => navigate("/home"), [navigate]);
 
-    const onClickChart = useCallback(() => navigate("/home/chart"), []);
+    const onClickChart = useCallback(() => navigate("/home/chart"), [navigate]);
 
-    const onClickSetting = useCallback(() => navigate("/home/setting"), []);
+    const onClickSetting = useCallback(() => navigate("/home/setting"), [navigate]);
 
-    const onClickOrders = useCallback(() => navigate("/home/orders"), []);
+    const onClickOrders = useCallback(() => navigate("/home/orders"), [navigate]);
 
     const onClickLogOut = useCallback(() => {
         logout();
         navigate("/login");
-    }, []);
+    }, [logout, navigate]);
 
     return (
         <>

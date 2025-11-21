@@ -26,7 +26,7 @@ export const useGetTradeConfig = () => {
         }).finally(() => {
             setLoading(false);
         });
-    }, []);
+    }, [toast]);
 
     return { getTradeConfig, tradeConfig, loading };
 };

@@ -10,7 +10,6 @@ import {
   Button,
   Alert,
   AlertIcon,
-  Spinner,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useAuth } from '../context/AuthContext';

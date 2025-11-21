@@ -45,7 +45,7 @@ export const useGetChartData = () => {
 
             const events = new Array<Event>();
             if (res.data.orders && res.data.orders.length > 0) {
-                res.data.orders.map((order) => {
+                res.data.orders.forEach((order) => {
                     const type1 = order.orderSide;
                     events.push({type: type1, time: order.fillDatetime, price: order.fillPrice});
                     if (order.closeDatetime && order.closePrice) {

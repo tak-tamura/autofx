@@ -70,7 +70,7 @@ export const TradeSetting: FC = () => {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting },
     reset
   } = useForm<TradeConfigUpdateRequest>();
 
