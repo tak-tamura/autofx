@@ -1,7 +1,7 @@
 package com.takuro_tamura.autofx.presentation.controller;
 
 import com.takuro_tamura.autofx.application.TradeConfigParameterApplicationService;
-import com.takuro_tamura.autofx.application.TradeSettingApplicationService;
+import com.takuro_tamura.autofx.application.TradeStateApplicationService;
 import com.takuro_tamura.autofx.application.command.TradeConfigUpdateCommand;
 import com.takuro_tamura.autofx.presentation.controller.request.ScheduleRequest;
 import com.takuro_tamura.autofx.presentation.controller.response.TradeConfigResponse;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/trade")
 @RequiredArgsConstructor
 public class TradeController {
-    private final TradeSettingApplicationService tradeSettingApplicationService;
+    private final TradeStateApplicationService tradeSettingApplicationService;
 
     private final TradeConfigParameterApplicationService tradeConfigParameterApplicationService;
 

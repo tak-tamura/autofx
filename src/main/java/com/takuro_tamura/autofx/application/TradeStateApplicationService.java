@@ -17,15 +17,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 @Service
-public class TradeSettingApplicationService {
-    private final Logger log = LoggerFactory.getLogger(TradeSettingApplicationService.class);
+public class TradeStateApplicationService {
+    private final Logger log = LoggerFactory.getLogger(TradeStateApplicationService.class);
     private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final RedisCacheService redisCacheService;
     private final TradeConfigParameterService tradeConfigParameterService;
     private final TaskScheduler taskScheduler;
 
-    public TradeSettingApplicationService(
+    public TradeStateApplicationService(
         OrderService orderService,
         OrderRepository orderRepository,
         RedisCacheService redisCacheService,
