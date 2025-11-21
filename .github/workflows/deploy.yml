@@ -52,7 +52,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           source: "app/*.jar"
-          target: "/home/rocky/deploy/autofx.jar"
+          target: "/home/rocky/deploy"
           strip_components: 1
 
       # サーバーに SSH で入り、サービス再起動
