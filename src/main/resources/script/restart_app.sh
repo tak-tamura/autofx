@@ -10,7 +10,7 @@ function start_app() {
   fi
 
   echo "Starting application..."
-  nohup java -jar "$JAR_NAME" > "$LOG_FILE" 2>&1 &
+  nohup API_KEY=${API_KEY} API_SECRET=${API_SECRET} java -jar "$JAR_NAME" > "$LOG_FILE" 2>&1 &
 
   echo -n "Waiting for application to start"
   for i in {1..10}; do
