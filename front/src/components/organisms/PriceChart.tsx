@@ -143,7 +143,7 @@ export const PriceChart: FC<PriceChartProps> = ({
           } as SeriesMarker<Time>;
         });
 
-      const orderMarkers = createSeriesMarkers(candleSeries, markers);
+      const orderMarkers = createSeriesMarkers(candleSeries, markers); // eslint-disable-line
     }
 
     // SMAなどオーバーレイ用ライン
