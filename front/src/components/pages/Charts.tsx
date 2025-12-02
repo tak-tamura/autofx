@@ -8,104 +8,17 @@ import {
   Select,
   VStack,
   HStack,
-  Text,
+  Text, 
 } from "@chakra-ui/react";
 import { FC, useEffect, useState } from "react";
-import { Chart } from "react-google-charts";
 import { useGetChartData } from "../../hooks/useGetChartData";
 import { GetChartDateRequest } from "../../types/requests";
-
-interface ChartOptions {
-  legend: string;
-  bar: { groupWidth: string };
-  backgroundColor: string;
-  candlestick: {
-    fallingColor: { strokeWidth: number; fill: string };
-    risingColor: { strokeWidth: number; fill: string };
-  };
-  series: {
-    [key: number]: {
-      type: string;
-      color?: string;
-      lineWidth?: number;
-      tooltip?: string;
-      enableInteractivity?: boolean;
-    };
-  };
-};
-
-interface RsiChartOptions {
-  hAxis: {
-    slantedText: boolean;
-  }
-  legend: {
-    position: string;
-  };
-  backgroundColor: string;
-  series: {
-    [key: number]: {
-      type?: string;
-      color?: string;
-      lineWidth?: number;
-    };
-  };
-};
-
-interface MacdChartOptions {
-  legend: {
-    position: string;
-  };
-  backgroundColor: string;
-  seriesType: string;
-  series: {
-    [key: number]: {
-      type?: string;
-      color?: string;
-      lineWidth?: number;
-    };
-  };
-};
+import { PriceChart } from "../organisms/PriceChart";
+import { RsiChart } from "../organisms/RsiChart";
+import { MacdChart } from "../organisms/MacdChart";
 
 export const Charts: FC = () => {
-  const { chartData, rsiChartData, macdChartData, profit, getChartData } = useGetChartData();
-
-  const chartOptions: ChartOptions = {
-    legend: "none",
-    bar: { groupWidth: "100%" },
-    backgroundColor: "#F7FAFC",
-    candlestick: {
-      fallingColor: { strokeWidth: 0, fill: "#a52714" },
-      risingColor: { strokeWidth: 0, fill: "#0f9d58" },
-    },
-    series: {},
-  };
-
-  const rsiChartOptions: RsiChartOptions = {
-    hAxis: {
-      slantedText: false,
-    },
-    legend: {
-      position: "none",
-    },
-    backgroundColor: "#F7FAFC",
-    series: {
-      0: { color: "black", lineWidth: 1 },
-      1: { color: "#e2431e" },
-      2: { color: "black", lineWidth: 1 },
-    },
-  };
-
-  const macdChartOptions: MacdChartOptions = {
-    legend: {
-      position: "none",
-    },
-    seriesType: "bars",
-    backgroundColor: "#F7FAFC",
-    series: {
-      1: { type: "line", lineWidth: 1 },
-      2: { type: "line", lineWidth: 1 },
-    },
-  };
+  const { priceChartData, rsiChartData, macdChartData, profit, getChartData } = useGetChartData();
 
   /* ロウソク足チャートのパラメータ */
   const [currencyPair, setCurrencyPair] = useState("USD_JPY");
@@ -147,39 +60,6 @@ export const Charts: FC = () => {
 
   /* 初回読み込み時とプロパティ変更時にチャートデータを取得 */
   useEffect(() => {
-    let indicatorIndex = 0;
-    if (enableSma) {
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-    }
-    if (enableEma) {
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-    }
-    if (enableBBands) {
-      chartOptions.series[++indicatorIndex] = { type: "line", color: "blue", lineWidth: 1 };
-      chartOptions.series[++indicatorIndex] = { type: "line", color: "blue", lineWidth: 1 };
-      chartOptions.series[++indicatorIndex] = { type: "line", color: "blue", lineWidth: 1 };
-    }
-    if (enableIchimoku) {
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-      chartOptions.series[++indicatorIndex] = { type: "line" };
-    }
-    if (includeOrder) {
-      chartOptions.series[++indicatorIndex] = {
-        type: "line",
-        tooltip: "none",
-        enableInteractivity: false,
-        lineWidth: 0,
-      };
-    }
-    //console.log(chartOptions.series);
-
     const req: GetChartDateRequest = {
       currencyPair,
       limit,
@@ -243,8 +123,7 @@ export const Charts: FC = () => {
     inSlowPeriod,
     inSignalPeriod,
     includeOrder,
-    getChartData,
-    chartOptions.series
+    getChartData
   ]);
 
   return (
@@ -332,34 +211,23 @@ export const Charts: FC = () => {
       <Box flex="1" bg="white" p={4} borderRadius="md" shadow="md">
         <VStack spacing={4}>
           {/* メインチャート */}
-          <Chart
-            chartType="CandlestickChart"
-            width="100%"
-            height="600px"
-            data={chartData}
-            options={chartOptions}
+          <PriceChart
+            candles={priceChartData}
+            enableSma={enableSma}
+            enableEma={enableEma}
+            enableBBands={enableBBands}
+            enableIchimoku={enableIchimoku}
+            includeOrder={includeOrder}
           />
 
           {/* RSI */}
           {enableRsi && rsiChartData.length > 0 && (
-            <Chart
-              chartType="LineChart"
-              width="100%"
-              height="200px"
-              data={rsiChartData}
-              options={rsiChartOptions}
-            />
+            <RsiChart data={rsiChartData} />
           )}
 
           {/* MACD */}
           {enableMacd && macdChartData.length > 0 && (
-            <Chart
-              chartType="ComboChart"
-              width="100%"
-              height="200px"
-              data={macdChartData}
-              options={macdChartOptions}
-            />
+            <MacdChart data={macdChartData} />
           )}
         </VStack>
       </Box>
