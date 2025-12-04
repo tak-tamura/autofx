@@ -8,7 +8,6 @@ import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
-import com.takuro_tamura.autofx.domain.service.BackTestService;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
@@ -40,7 +39,6 @@ public class TradeApplicationService {
     private final CandleService candleService;
     private final OrderService orderService;
     private final TradeConfigParameterService tradeConfigParameterService;
-    private final BackTestService backTestService;
     private final Strategy strategy;
     private final CandleRepository candleRepository;
     private final OrderRepository orderRepository;
@@ -82,17 +80,6 @@ public class TradeApplicationService {
         }
 
         final double[] closePrices = candleService.extractClosePrices(candles);
-
-        final double backTestResult = backTestService.getBackTestProfitLoss(
-            targetPair,
-            targetTimeFrame,
-            tradeConfigParameterService.getMaxCandleNum()
-        );
-
-        if (backTestResult <= 0.0) {
-            log.info("Back test result is no profit({}), abort trading", backTestResult);
-            return;
-        }
 
         final TradeSignal signal = strategy.checkTradeSignal(closePrices, closePrices.length - 2);
 
