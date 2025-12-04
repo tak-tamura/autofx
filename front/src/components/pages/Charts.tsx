@@ -39,7 +39,7 @@ export const Charts: FC = () => {
 
   /* BBandsのパラメータ */
   const [enableBBands, setEnableBBands] = useState(false);
-  const [bbandsN, setBbandsN] = useState(20);
+  const [bbandsN, setBbandsN] = useState(2);
   const [bbandsK, setBbandsK] = useState(20);
 
   /* Ichimokuのパラメータ */
