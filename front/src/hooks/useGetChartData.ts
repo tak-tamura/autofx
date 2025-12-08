@@ -79,8 +79,6 @@ export const useGetChartData = () => {
                 });
             }
             let currentEvent = events.shift();
-            console.log("events:", events);
-            console.log("currentEvent:", currentEvent);
 
             const priceDataRows = new Array<PriceChartData>();
             const rsiDataRows = new Array<RsiChartData>();
@@ -128,8 +126,21 @@ export const useGetChartData = () => {
                     priceDateRow.chikou = res.data.indicator.ichimoku.chikou[i] || null;
                 }
 
-                if (currentEvent && currentEvent.time === c.time) {
-                    //priceDateRow.eventType = currentEvent.type;
+                while (currentEvent) {
+                    const eventTime = new Date(currentEvent.time).getTime();
+                    const candleTime = new Date(c.time).getTime();
+                    if (eventTime < candleTime) {
+                        // イベントの時間が現在のローソク足の時間より前の場合、次のローソク足へ進む
+                        currentEvent = events.shift();
+                        continue;
+                    }
+
+                    if (eventTime > candleTime) {
+                        // イベントの時間が現在のローソク足の時間より後の場合、ループを抜ける
+                        break;
+                    }
+                    
+                    // イベントの時間が現在のローソク足の時間と等しい場合、ラベルを設定
                     priceDateRow.eventLabel = `${currentEvent.type}(${currentEvent.price.toFixed(3)})`;
                     currentEvent = events.shift();
                 }
