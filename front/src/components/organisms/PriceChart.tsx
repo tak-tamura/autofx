@@ -104,6 +104,17 @@ export const PriceChart: FC<PriceChartProps> = ({
       rightPriceScale: {
         borderColor: "#ccc",
       },
+      localization: {
+        timeFormatter: (time: UTCTimestamp) => {
+          const date = new Date(time * 1000);
+          const y = date.getFullYear();
+          const m = ("0" + (date.getMonth() + 1)).slice(-2);
+          const d = ("0" + date.getDate()).slice(-2);
+          const hh = ("0" + date.getHours()).slice(-2);
+          const mm = ("0" + date.getMinutes()).slice(-2);
+          return `${y}-${m}-${d} ${hh}:${mm}`;
+        },
+      },  
     });
 
     // ローソク足シリーズ
