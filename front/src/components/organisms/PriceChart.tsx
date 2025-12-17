@@ -1,4 +1,4 @@
-import { FC, useEffect, useRef } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import {
   createChart,
   IChartApi,
@@ -10,6 +10,8 @@ import {
   SeriesMarker, 
   Time,
   createSeriesMarkers,
+  ISeriesApi,
+  ISeriesMarkersPluginApi,
 } from "lightweight-charts";
 
 interface Candle {
@@ -80,8 +82,22 @@ export const PriceChart: FC<PriceChartProps> = ({
   enableIchimoku,
   includeOrder,
 }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+
+  // インジケータ用seriesを保持
+  const smaSeriesRefs = useRef<ISeriesApi<'Line'>[]>([]);
+  const emaSeriesRefs = useRef<ISeriesApi<'Line'>[]>([]);
+  const bbSeriesRefs = useRef<ISeriesApi<'Line'>[]>([]);
+  const ichimokuSeriesRefs = useRef<ISeriesApi<'Line'>[]>([]);
+
+  // マーカー管理
+  const orderMarkersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+
+  // 画面Open時にチャートを初期化
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -116,6 +132,7 @@ export const PriceChart: FC<PriceChartProps> = ({
         },
       },  
     });
+    chartRef.current = chart;
 
     // ローソク足シリーズ
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -135,83 +152,52 @@ export const PriceChart: FC<PriceChartProps> = ({
       close: c.close,
     }));
     candleSeries.setData(candleData);
+    candleSeriesRef.current = candleSeries;
 
-    // 注文マーカー
-    if (includeOrder) {
-      const markers: SeriesMarker<Time>[] = candles
-        .filter((c) => !!c.eventLabel)
-        .map((c) => {
-          const label = c.eventLabel ?? "";
-          const isBuy = label.startsWith("BUY");
-
-          return {
-            time: c.time,
-            position: isBuy ? "belowBar" : "aboveBar", // BUYは足の下、SELLは足の上
-            color: isBuy ? "#0f9d58" : "#a52714",      // BUY=緑, SELL=赤
-            shape: isBuy ? "arrowUp" : "arrowDown",    // 矢印マーカー
-            text: isBuy ? "B" : "S",                   // 文字（任意）
-            size: 1,                                   // 0〜3くらいで調整
-          } as SeriesMarker<Time>;
-        });
-
-      const orderMarkers = createSeriesMarkers(candleSeries, markers); // eslint-disable-line
-    }
-
-    // SMAなどオーバーレイ用ライン
-    const addLine = (
-      extract: (c: Candle) => number | undefined | null,
-      color: string
-    ) => {
-      const lineSeries = chart.addSeries(LineSeries, { 
+    // SMA, EMA, BBands, Ichimokuラインをあらかじめ作成しておく
+    smaSeriesRefs.current = smaConfigs.map((config) => {
+      return chart.addSeries(LineSeries, { 
         lineWidth: 1,
-        color: color,
+        color: config.color,
       });
-      const data: LineData[] = candles
-        .map((c) => {
-          const v = extract(c);
-          if (v === undefined || v === null) {
-            return null;
-          }
-          return {
-            time: c.time as any,
-            value: v,
-          };
-        }).filter((p): p is LineData => p !== null);
-      lineSeries.setData(data);
-      return lineSeries;
-    };
+    });
 
-    if (enableSma) {
-      smaConfigs.forEach((config, index) => {
-        addLine((c) => c[config.key], config.color);
+    emaSeriesRefs.current = emaConfigs.map((config) => {
+      return chart.addSeries(LineSeries, { 
+        lineWidth: 1,
+        color: config.color,
       });
-    }
+    });
     
-    if (enableEma) {
-      emaConfigs.forEach((config, index) => {
-        addLine((c) => c[config.key], config.color);
-      }); 
-    }
-
-    if (enableBBands) {
-      bbConfigs.forEach((config) => {
-        addLine((c) => {
-          if (config.key === "bbUpper") return c.bbUp;
-          if (config.key === "bbMiddle") return c.bbMid;
-          if (config.key === "bbLower") return c.bbDown;
-          return null;
-        }, config.color);
+    bbSeriesRefs.current = bbConfigs.map((config) => {
+      return chart.addSeries(LineSeries, { 
+        lineWidth: 1,
+        color: config.color,
       });
-    }
+    });
 
-    if (enableIchimoku) {
-      ichimokuConfigs.forEach((config) => {
-        addLine((c) => c[config.key], config.color);
+    ichimokuSeriesRefs.current = ichimokuConfigs.map((config) => {
+      return chart.addSeries(LineSeries, { 
+        lineWidth: 1,
+        color: config.color,
       });
-    }
+    });
+
+    // マーカー管理オブジェクト
+    orderMarkersRef.current = createSeriesMarkers(candleSeries);
 
     // 初期フィット
     chart.timeScale().fitContent();
+
+    // 今右端を見ているかの判定
+    chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+      if (!range || !candleSeries) return;
+      const barsInfo = candleSeries.barsInLogicalRange(range);
+      if (!barsInfo) return;
+
+      const isAtRightEnd = (barsInfo.barsAfter ?? 0) < 1;
+      setAutoScroll(isAtRightEnd);
+    });
 
     const handleResize = () => {
       if (!containerRef.current) return;
@@ -223,7 +209,173 @@ export const PriceChart: FC<PriceChartProps> = ({
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [candles, enableSma, enableEma, enableBBands, enableIchimoku, includeOrder]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
+
+  // candlesデータ更新時の処理
+  useEffect(() => {
+    if (!chartRef.current || !candleSeriesRef.current) return;
+
+    const candleData: CandlestickData[] = candles.map((c) => ({
+      time: c.time as any, // timeパースは後で調整
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+    candleSeriesRef.current.setData(candleData);
+
+    if (autoScroll) {
+      chartRef.current.timeScale().scrollToRealTime();
+    }
+
+  }, [candles, autoScroll]);
+
+  // SMA表示切替時の処理
+  useEffect(() => {
+    if (!chartRef.current || smaSeriesRefs.current.length === 0) return;
+
+    if (!enableSma) {
+      smaSeriesRefs.current.forEach((series) => series.setData([]));
+      return;
+    }
+
+    const [sma1Series, sma2Series, sma3Series] = smaSeriesRefs.current;
+
+    const sma1Data: LineData[] = candles
+      .map((c) => (c.sma1 ? { time: c.time as any, value: c.sma1 } : null))
+      .filter((p): p is LineData => p !== null);
+    const sma2Data: LineData[] = candles
+      .map((c) => (c.sma2 ? { time: c.time as any, value: c.sma2 } : null))
+      .filter((p): p is LineData => p !== null);
+    const sma3Data: LineData[] = candles
+      .map((c) => (c.sma3 ? { time: c.time as any, value: c.sma3 } : null))
+      .filter((p): p is LineData => p !== null);
+
+    sma1Series.setData(sma1Data);
+    sma2Series.setData(sma2Data);
+    sma3Series.setData(sma3Data);
+  }, [enableSma, candles]);
+
+  // EMA表示切替時の処理
+  useEffect(() => {
+    if (!chartRef.current || emaSeriesRefs.current.length === 0) return;
+
+    if (!enableEma) {
+      emaSeriesRefs.current.forEach((series) => series.setData([]));
+      return;
+    }
+
+    const [ema1Series, ema2Series, ema3Series] = emaSeriesRefs.current;
+
+    const ema1Data: LineData[] = candles
+      .map((c) => (c.ema1 ? { time: c.time as any, value: c.ema1 } : null))
+      .filter((p): p is LineData => p !== null);
+    const ema2Data: LineData[] = candles
+      .map((c) => (c.ema2 ? { time: c.time as any, value: c.ema2 } : null))
+      .filter((p): p is LineData => p !== null);
+    const ema3Data: LineData[] = candles
+      .map((c) => (c.ema3 ? { time: c.time as any, value: c.ema3 } : null))
+      .filter((p): p is LineData => p !== null);
+
+    ema1Series.setData(ema1Data);
+    ema2Series.setData(ema2Data);
+    ema3Series.setData(ema3Data);
+  }, [enableEma, candles]);
+
+  // BBands表示切替時の処理
+  useEffect(() => {
+    if (!chartRef.current || bbSeriesRefs.current.length === 0) return;
+
+    if (!enableBBands) {
+      bbSeriesRefs.current.forEach((series) => series.setData([]));
+      return;
+    }
+
+    const [bbUpperSeries, bbMiddleSeries, bbLowerSeries] = bbSeriesRefs.current;
+
+    const bbUpperData: LineData[] = candles
+      .map((c) => (c.bbUp ? { time: c.time as any, value: c.bbUp } : null))
+      .filter((p): p is LineData => p !== null);
+    const bbMiddleData: LineData[] = candles
+      .map((c) => (c.bbMid ? { time: c.time as any, value: c.bbMid } : null))
+      .filter((p): p is LineData => p !== null);
+    const bbLowerData: LineData[] = candles
+      .map((c) => (c.bbDown ? { time: c.time as any, value: c.bbDown } : null))
+      .filter((p): p is LineData => p !== null);
+
+    bbUpperSeries.setData(bbUpperData);
+    bbMiddleSeries.setData(bbMiddleData);
+    bbLowerSeries.setData(bbLowerData);
+  }, [enableBBands, candles]);
+
+  // Ichimoku表示切替時の処理
+  useEffect(() => {
+    if (!chartRef.current || ichimokuSeriesRefs.current.length === 0) return;
+
+    if (!enableIchimoku) {
+      ichimokuSeriesRefs.current.forEach((series) => series.setData([]));
+      return;
+    }
+
+    const [
+      tenkanSeries,
+      kijunSeries,
+      senkouASeries,
+      senkouBSeries,
+      chikouSeries,
+    ] = ichimokuSeriesRefs.current;
+
+    const tenkanData: LineData[] = candles
+      .map((c) => (c.tenkan ? { time: c.time as any, value: c.tenkan } : null))
+      .filter((p): p is LineData => p !== null);
+    const kijunData: LineData[] = candles
+      .map((c) => (c.kijun ? { time: c.time as any, value: c.kijun } : null))
+      .filter((p): p is LineData => p !== null);
+    const senkouAData: LineData[] = candles
+      .map((c) => (c.senkouA ? { time: c.time as any, value: c.senkouA } : null))
+      .filter((p): p is LineData => p !== null);
+    const senkouBData: LineData[] = candles
+      .map((c) => (c.senkouB ? { time: c.time as any, value: c.senkouB } : null))
+      .filter((p): p is LineData => p !== null);
+    const chikouData: LineData[] = candles
+      .map((c) => (c.chikou ? { time: c.time as any, value: c.chikou } : null))
+      .filter((p): p is LineData => p !== null);
+
+    tenkanSeries.setData(tenkanData);
+    kijunSeries.setData(kijunData);
+    senkouASeries.setData(senkouAData);
+    senkouBSeries.setData(senkouBData);
+    chikouSeries.setData(chikouData);
+  }, [enableIchimoku, candles]);
+
+  // 注文マーカー表示切替時の処理
+  useEffect(() => {
+    if (!candleSeriesRef.current || !orderMarkersRef.current) return;
+
+    if (!includeOrder) {
+      orderMarkersRef.current.setMarkers([]);
+      return;
+    }
+
+    const markers: SeriesMarker<Time>[] = candles
+      .filter((c) => !!c.eventLabel)
+      .map((c) => {
+        const label = c.eventLabel ?? "";
+        const isBuy = label.startsWith("BUY");
+        return {
+          time: c.time,
+          position: isBuy ? "belowBar" : "aboveBar",
+          color: isBuy ? "#0f9d58" : "#a52714",
+          shape: isBuy ? "arrowUp" : "arrowDown",
+          text: isBuy ? "B" : "S",
+          size: 1,
+        } as SeriesMarker<Time>;
+      });
+
+    markers.sort((a, b) => Number(a.time) - Number(b.time));
+    orderMarkersRef.current.setMarkers(markers);
+  }, [candles, includeOrder]);
 
   return <div ref={containerRef} style={{ width: "100%", height: "600px" }} />;
 };
