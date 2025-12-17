@@ -12,6 +12,7 @@ import {
   createSeriesMarkers,
   ISeriesApi,
   ISeriesMarkersPluginApi,
+  TickMarkType,
 } from "lightweight-charts";
 
 interface Candle {
@@ -74,6 +75,23 @@ const ichimokuConfigs = [
   { key: "chikou" as const, color: "#718096" },
 ];
 
+const fmtJst = (tSec: number) => {
+  const d = new Date(tSec * 1000);
+  // ここでAsia/Tokyo指定で確実にJST表示（PCのTZに依存しない）
+  const parts = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
+};
+
 export const PriceChart: FC<PriceChartProps> = ({
   candles,
   enableSma,
@@ -116,21 +134,38 @@ export const PriceChart: FC<PriceChartProps> = ({
         borderColor: "#ccc",
         timeVisible: true,
         secondsVisible: false,
+        tickMarkFormatter: (time: Time, _type: TickMarkType) => {
+          if (typeof time !== "number" && typeof time !== "string") {
+            const { year, month, day } = time;
+            return `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+          }
+          if (typeof time === "number") {
+            const d = new Date(time * 1000);
+            return new Intl.DateTimeFormat("ja-JP", {
+              timeZone: "Asia/Tokyo",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(d);
+          }
+          return time;
+        },
       },
       rightPriceScale: {
         borderColor: "#ccc",
       },
       localization: {
-        timeFormatter: (time: UTCTimestamp) => {
-          const date = new Date(time * 1000);
-          const y = date.getFullYear();
-          const m = ("0" + (date.getMonth() + 1)).slice(-2);
-          const d = ("0" + date.getDate()).slice(-2);
-          const hh = ("0" + date.getHours()).slice(-2);
-          const mm = ("0" + date.getMinutes()).slice(-2);
-          return `${y}-${m}-${d} ${hh}:${mm}`;
+        timeFormatter: (time: Time) => {
+          if (typeof time === "number") return fmtJst(time);
+          if (typeof time === "string") return time;
+          
+          const { year, month, day } = time;
+          return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
         },
-      },  
+        locale: "ja-JP",
+      },
     });
     chartRef.current = chart;
 

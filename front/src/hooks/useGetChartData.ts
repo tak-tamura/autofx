@@ -88,11 +88,11 @@ export const useGetChartData = () => {
             for (let i = 0; i < candles.length; i++) {
                 const c = candles[i];
                 const date = new Date(c.time);
-                const utcSec = Math.floor(date.getTime() / 1000);
-                const jstSec = (utcSec + 9 * 60 * 60) as UTCTimestamp;
+                const utcSec = Math.floor(date.getTime() / 1000) as UTCTimestamp;
+                //const jstSec = (utcSec + 9 * 60 * 60) as UTCTimestamp;
 
                 const priceDateRow: PriceChartData = {
-                    time: jstSec,
+                    time: utcSec,
                     open: c.open,
                     high: c.high,
                     low: c.low,
@@ -150,14 +150,14 @@ export const useGetChartData = () => {
 
                 if (res.data.indicator.rsi) {
                     rsiDataRows.push({
-                        time: jstSec,
+                        time: utcSec,
                         value: res.data.indicator.rsi.values[i] || 0,
                     });
                 }
 
                 if (res.data.indicator.macd) {
                     macdDataRows.push({
-                        time: jstSec,
+                        time: utcSec,
                         macd: res.data.indicator.macd.macd[i] || 0,
                         signal: res.data.indicator.macd.macdSignal[i] || 0,
                         hist: res.data.indicator.macd.macdHist[i] || 0,
