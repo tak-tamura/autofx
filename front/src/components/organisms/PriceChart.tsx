@@ -14,6 +14,7 @@ import {
   ISeriesMarkersPluginApi,
   TickMarkType,
 } from "lightweight-charts";
+import { fmtJst } from "../../util/util";
 
 interface Candle {
   time: UTCTimestamp;
@@ -74,23 +75,6 @@ const ichimokuConfigs = [
   { key: "senkouB" as const, color: "#DD6B20" },
   { key: "chikou" as const, color: "#718096" },
 ];
-
-const fmtJst = (tSec: number) => {
-  const d = new Date(tSec * 1000);
-  // ここでAsia/Tokyo指定で確実にJST表示（PCのTZに依存しない）
-  const parts = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(d);
-
-  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
-};
 
 export const PriceChart: FC<PriceChartProps> = ({
   candles,
