@@ -31,10 +31,25 @@ import {
 } from "@chakra-ui/react";
 import { useOrderHistory } from "../../hooks/useOrderHistory";
 
+const getFirstDayOfMonth = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  return `${year}-${month.toString().padStart(2, "0")}-01`;
+};
+
+const getEndDayOfMonth = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${year}-${month.toString().padStart(2, "0")}-${lastDay
+    .toString()
+    .padStart(2, "0")}`;
+};
+
 export const OrderHistoryPage: React.FC = () => {
   // 検索条件（シンプルに state 直結）
-  const [startDate, setStartDate] = useState<string>("2024-01-01");
-  const [endDate, setEndDate] = useState<string>("2024-01-31");
+  const [startDate, setStartDate] = useState<string>(getFirstDayOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<string>(getEndDayOfMonth(new Date()));
   const [page, setPage] = useState<number>(0);
   const [size, setSize] = useState<number>(10);
 
