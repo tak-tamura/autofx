@@ -79,9 +79,7 @@ public class TradeApplicationService {
             return;
         }
 
-        final double[] closePrices = candleService.extractClosePrices(candles);
-
-        final TradeSignal signal = strategy.checkTradeSignal(closePrices, closePrices.length - 2);
+        final TradeSignal signal = strategy.checkTradeSignal(candles, candles.size() - 2);
 
         if (signal == TradeSignal.BUY) {
             if (orderService.canMakeNewOrder(lastOrder.orElse(null))) {

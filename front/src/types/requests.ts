@@ -10,6 +10,7 @@ export type GetChartDateRequest = {
     ichimoku: IchimokuParams;
     rsi: RsiParams;
     macd: MacdParams;
+    adx: AdxParams;
     includeOrder: boolean;
 };
 
@@ -38,6 +39,11 @@ export type MacdParams = {
     inFastPeriod: number;
     inSlowPeriod: number;
     inSignalPeriod: number;
+};
+
+export type AdxParams = {
+    enable: boolean;
+    period: number;
 };
 
 export type TradeConfigUpdateRequest = {

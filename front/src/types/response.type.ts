@@ -16,6 +16,7 @@ export type Indicator = {
     ichimoku?: Ichimoku;
     rsi?: Rsi;
     macd?: Macd;
+    adx?: Array<number>;
 };
 
 export type MA = {

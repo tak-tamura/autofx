@@ -16,9 +16,17 @@ import { GetChartDateRequest } from "../../types/requests";
 import { PriceChart } from "../organisms/PriceChart";
 import { RsiChart } from "../organisms/RsiChart";
 import { MacdChart } from "../organisms/MacdChart";
+import { AdxPanelChart } from "../organisms/AdxChart";
 
 export const Charts: FC = () => {
-  const { priceChartData, rsiChartData, macdChartData, profit, getChartData } = useGetChartData();
+  const { 
+    priceChartData, 
+    rsiChartData, 
+    macdChartData,
+    adxChartData,
+    profit, 
+    getChartData 
+  } = useGetChartData();
 
   /* ロウソク足チャートのパラメータ */
   const [currencyPair, setCurrencyPair] = useState("USD_JPY");
@@ -55,6 +63,10 @@ export const Charts: FC = () => {
   const [inSlowPeriod, setInSlowPeriod] = useState(26);
   const [inSignalPeriod, setInSignalPeriod] = useState(9);
 
+  /* ADXのパラメータ */
+  const [enableAdx, setEnableAdx] = useState(false);
+  const [adxPeriod, setAdxPeriod] = useState(14);
+
   /* Orderのパラメータ */
   const [includeOrder, setIncludeOrder] = useState(false);
 
@@ -90,6 +102,10 @@ export const Charts: FC = () => {
         inSlowPeriod: inSlowPeriod,
         inSignalPeriod: inSignalPeriod,
       },
+      adx: {
+        enable: enableAdx,
+        period: adxPeriod,
+      },
       includeOrder: includeOrder,
     };
     const call = () => {
@@ -122,12 +138,14 @@ export const Charts: FC = () => {
     inFastPeriod,
     inSlowPeriod,
     inSignalPeriod,
+    enableAdx,
+    adxPeriod,
     includeOrder,
     getChartData
   ]);
 
   return (
-    <Flex w="100%" h="100vh" p={4} bg="gray.100" gap={4}>
+    <Flex w="100%" p={4} bg="gray.100" gap={4}>
       {/* 左パネル: 設定 */}
       <Box w="300px" bg="white" p={4} borderRadius="md" shadow="md" overflowY="auto">
         <VStack align="stretch" spacing={4}>
@@ -204,6 +222,14 @@ export const Charts: FC = () => {
               <Input placeholder="Signal" width="80px" value={inSignalPeriod} onChange={(e) => setInSignalPeriod(Number(e.target.value))} />
             </HStack>
           )}
+
+          {/* ADX */}
+          <Checkbox onChange={(e) => setEnableAdx(e.target.checked)}>ADX</Checkbox>
+          {enableAdx && (
+            <HStack>
+              <Input placeholder="Period" width="80px" value={adxPeriod} onChange={(e) => setAdxPeriod(Number(e.target.value))} />
+            </HStack>
+          )}
         </VStack>
       </Box>
 
@@ -228,6 +254,10 @@ export const Charts: FC = () => {
           {/* MACD */}
           {enableMacd && macdChartData.length > 0 && (
             <MacdChart data={macdChartData} />
+          )}
+          {/* ADX */}
+          {enableAdx && adxChartData.length > 0 && (
+            <AdxPanelChart adx={adxChartData} />
           )}
         </VStack>
       </Box>

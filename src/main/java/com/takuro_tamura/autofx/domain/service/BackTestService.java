@@ -42,7 +42,6 @@ public class BackTestService {
             return Collections.emptyList();
         }
 
-        final double[] closePrices = candleService.extractClosePrices(candles);
         final List<Order> orders = new ArrayList<>();
         Order lastOrder;
 
@@ -63,7 +62,7 @@ public class BackTestService {
                 }
             }
 
-            final TradeSignal signal = strategy.checkTradeSignal(closePrices, i);
+            final TradeSignal signal = strategy.checkTradeSignal(candles, i);
 
             switch (signal) {
                 case BUY -> orderService.handleBackTestOrder(OrderSide.BUY, orders, lastOrder, candle);

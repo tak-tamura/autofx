@@ -11,6 +11,7 @@ import com.takuro_tamura.autofx.domain.service.BackTestService;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
+import com.takuro_tamura.autofx.domain.service.indicator.AdxCalculator;
 import com.takuro_tamura.autofx.presentation.controller.response.CandleDto;
 import com.takuro_tamura.autofx.presentation.controller.response.ChartResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -109,6 +111,13 @@ public class ChartApplicationService {
                 param.getInSignalPeriod(),
                 closePrices
             ).toRecord());
+        }
+
+        if (command.isAdxEnabled()) {
+            final List<Double> adx = Arrays.stream(AdxCalculator.calculateAdx(candles, command.getAdx().getPeriod()))
+                .boxed()
+                .collect(Collectors.toList());
+            builder.adx(adx);
         }
     }
 }

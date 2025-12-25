@@ -26,6 +26,7 @@ public class ChartResponse {
         IchimokuRecord ichimoku,
         RsiRecord rsi,
         MacdRecord macd,
+        List<Double> adx,
         List<OrderRecord> orders,
         Double profit
     ) {
@@ -40,6 +41,7 @@ public class ChartResponse {
             .ichimoku(ichimoku)
             .rsi(rsi)
             .macd(macd)
+            .adx(adx)
             .build();
     }
 
@@ -50,7 +52,8 @@ public class ChartResponse {
         BBandsRecord bbands,
         IchimokuRecord ichimoku,
         RsiRecord rsi,
-        MacdRecord macd
+        MacdRecord macd,
+        List<Double> adx
     ) {
         @Builder
         public Indicator {

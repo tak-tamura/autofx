@@ -15,6 +15,7 @@ public class GetChartCommand {
     private IchimokuParam ichimoku;
     private RsiParam rsi;
     private MacdParam macd;
+    private AdxParam adx;
     private boolean includeOrder;
 
     public boolean isSmaEnabled() {
@@ -39,5 +40,9 @@ public class GetChartCommand {
 
     public boolean isMacdEnabled() {
         return macd != null && macd.isEnable();
+    }
+
+    public boolean isAdxEnabled() {
+        return adx != null && adx.isEnable();
     }
 }

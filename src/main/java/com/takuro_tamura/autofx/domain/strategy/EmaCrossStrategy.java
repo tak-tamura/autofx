@@ -4,19 +4,26 @@ import com.takuro_tamura.autofx.domain.indicator.BBands;
 import com.takuro_tamura.autofx.domain.indicator.Ema;
 import com.takuro_tamura.autofx.domain.indicator.Macd;
 import com.takuro_tamura.autofx.domain.indicator.Rsi;
+import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
+import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class EmaCrossStrategy implements Strategy {
 
+    private final CandleService candleService;
     private final TradeConfigParameterService tradeConfigParameterService;
 
     @Override
-    public TradeSignal checkTradeSignal(double[] closePrices, int index) {
+    public TradeSignal checkTradeSignal(List<Candle> candles, int index) {
+        final double[] closePrices = candleService.extractClosePrices(candles);
+
         final int[] emaPeriods = new int[]{
             tradeConfigParameterService.getEmaPeriod1(),
             tradeConfigParameterService.getEmaPeriod2()

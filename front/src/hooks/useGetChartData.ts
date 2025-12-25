@@ -47,12 +47,19 @@ type MacdChartData = {
     hist: number;
 };
 
+type AdxChartData = {
+    time: UTCTimestamp;
+    value: number;
+};
+
 export const useGetChartData = () => {
     const [priceChartData, setPriceChartData] = useState<Array<PriceChartData>>([]);
 
     const [rsiChartData, setRsiChartData] = useState<Array<RsiChartData>>([]);
 
     const [macdChartData, setMacdChartData] = useState<Array<MacdChartData>>([]);
+
+    const [adxChartData, setAdxChartData] = useState<Array<AdxChartData>>([]);
 
     const [profit, setProfit] = useState(0);
 
@@ -83,6 +90,7 @@ export const useGetChartData = () => {
             const priceDataRows = new Array<PriceChartData>();
             const rsiDataRows = new Array<RsiChartData>();
             const macdDataRows = new Array<MacdChartData>();
+            const adxDataRows = new Array<AdxChartData>();
 
             const candles = res.data.candles;
             for (let i = 0; i < candles.length; i++) {
@@ -163,12 +171,20 @@ export const useGetChartData = () => {
                         hist: res.data.indicator.macd.macdHist[i] || 0,
                     });
                 }
+
+                if (res.data.indicator.adx) {
+                    adxDataRows.push({
+                        time: utcSec,
+                        value: res.data.indicator.adx[i] || 0,
+                    });
+                }
             }
             //console.log(rows);
             //console.log(priceDataRows);
             setPriceChartData(priceDataRows);
             setRsiChartData(rsiDataRows);
             setMacdChartData(macdDataRows);
+            setAdxChartData(adxDataRows);
             setProfit(res.data.profit);
         }).catch(e => {
             console.log(e);
@@ -176,5 +192,12 @@ export const useGetChartData = () => {
         });
     }, []);
 
-    return { priceChartData, rsiChartData, macdChartData, profit, getChartData, };
+    return { 
+        priceChartData, 
+        rsiChartData, 
+        macdChartData, 
+        adxChartData,
+        profit, 
+        getChartData, 
+    };
 };
