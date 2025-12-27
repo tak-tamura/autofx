@@ -35,6 +35,8 @@ public class TradeConfigParameterApplicationService {
             .macdFastPeriod(tradeConfigParameterService.getMacdFastPeriod())
             .macdSlowPeriod(tradeConfigParameterService.getMacdSlowPeriod())
             .macdSignalPeriod(tradeConfigParameterService.getMacdSignalPeriod())
+            .adxPeriod(tradeConfigParameterService.getAdxPeriod())
+            .adxThreshold(tradeConfigParameterService.getAdxThreshold())
             .build();
     }
 
@@ -98,6 +100,12 @@ public class TradeConfigParameterApplicationService {
         }
         if (!tradeConfigParameterService.updateMacdSignalPeriod(command.getMacdSignalPeriod())) {
             log.warn("Failed to update MACD signal period");
+        }
+        if (!tradeConfigParameterService.updateAdxPeriod(command.getAdxPeriod())) {
+            log.warn("Failed to update ADX period");
+        }
+        if (!tradeConfigParameterService.updateAdxThreshold(command.getAdxThreshold())) {
+            log.warn("Failed to update ADX threshold");
         }
     }
 }

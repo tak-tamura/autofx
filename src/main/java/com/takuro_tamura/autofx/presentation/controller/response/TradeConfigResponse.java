@@ -25,5 +25,7 @@ public record TradeConfigResponse(
     int rsiPeriod,
     int macdFastPeriod,
     int macdSlowPeriod,
-    int macdSignalPeriod
+    int macdSignalPeriod,
+    int adxPeriod,
+    double adxThreshold
 ) {}

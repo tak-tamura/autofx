@@ -102,7 +102,9 @@ export const TradeSetting: FC = () => {
         rsiPeriod: tradeConfig.rsiPeriod,
         macdFastPeriod: tradeConfig.macdFastPeriod,
         macdSlowPeriod: tradeConfig.macdSlowPeriod,
-        macdSignalPeriod: tradeConfig.macdSignalPeriod
+        macdSignalPeriod: tradeConfig.macdSignalPeriod,
+        adxPeriod: tradeConfig.adxPeriod,
+        adxThreshold: tradeConfig.adxThreshold,
       });
     }
   }, [tradeConfig, reset]);
@@ -397,6 +399,34 @@ export const TradeSetting: FC = () => {
               isInvalid={!!errors.macdSignalPeriod}
               error={errors.macdSignalPeriod?.message}
               placeholder="9"
+            />
+
+            {/* ADX Period */}
+            <RHFNumberInput 
+              name="adxPeriod"
+              control={control}
+              label="ADX Period"
+              min={0}
+              max={100}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.adxPeriod}
+              error={errors.adxPeriod?.message}
+              placeholder="14"
+            />
+
+            {/* ADX Threshold */}
+            <RHFNumberInput 
+              name="adxThreshold"
+              control={control}
+              label="ADX Threshold"
+              min={0}
+              max={100}
+              step={0.1}
+              precision={1}
+              isInvalid={!!errors.adxThreshold}
+              error={errors.adxThreshold?.message}
+              placeholder="20"
             />
 
             <Button type="submit" colorScheme="teal" isLoading={isSubmitting}>保存</Button>

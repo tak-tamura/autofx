@@ -66,4 +66,10 @@ public class TradeConfigUpdateCommand {
 
     @Min(1)
     private int macdSignalPeriod;
+
+    @Min(1)
+    private int adxPeriod;
+
+    @Min(0)
+    private double adxThreshold;
 }

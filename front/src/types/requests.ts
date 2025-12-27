@@ -67,4 +67,6 @@ export type TradeConfigUpdateRequest = {
     macdFastPeriod: number;
     macdSlowPeriod: number;
     macdSignalPeriod: number;
+    adxPeriod: number;
+    adxThreshold: number;
 };

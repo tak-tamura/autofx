@@ -178,4 +178,20 @@ public class TradeConfigParameterService {
     public boolean updateMacdSignalPeriod(int macdSignalPeriod) {
         return configParameterService.updateConfigParameter("TRADE.MACD_SIGNAL_PERIOD", String.valueOf(macdSignalPeriod));
     }
+
+    public int getAdxPeriod() {
+        return configParameterService.getInt("TRADE.ADX_PERIOD", 14);
+    }
+
+    public boolean updateAdxPeriod(int adxPeriod) {
+        return configParameterService.updateConfigParameter("TRADE.ADX_PERIOD", String.valueOf(adxPeriod));
+    }
+
+    public double getAdxThreshold() {
+        return configParameterService.getDouble("TRADE.ADX_THRESHOLD", 20.0);
+    }
+
+    public boolean updateAdxThreshold(double adxThreshold) {
+        return configParameterService.updateConfigParameter("TRADE.ADX_THRESHOLD", String.valueOf(adxThreshold));
+    }
 }
