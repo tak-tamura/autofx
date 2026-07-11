@@ -1,5 +1,6 @@
 package com.takuro_tamura.autofx.application;
 
+import com.takuro_tamura.autofx.application.strategy.StrategyFactory;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
 import com.takuro_tamura.autofx.domain.model.entity.Order;
@@ -11,7 +12,6 @@ import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
-import com.takuro_tamura.autofx.domain.strategy.Strategy;
 import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
 import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
 import com.takuro_tamura.autofx.infrastructure.external.adapter.PrivateApi;
@@ -36,15 +36,14 @@ public class TradeApplicationService {
     private final static int MINIMUM_ORDER_QUANTITY = 10000;
 
     private final Logger log = LoggerFactory.getLogger(TradeApplicationService.class);
-    private final CandleService candleService;
     private final OrderService orderService;
     private final TradeConfigParameterService tradeConfigParameterService;
-    private final Strategy strategy;
     private final CandleRepository candleRepository;
     private final OrderRepository orderRepository;
     private final PrivateApi privateApi;
     private final PublicApi publicApi;
     private final RedisCacheService redisCacheService;
+    private final StrategyFactory strategyFactory;
 
     @Transactional
     public void trade() {
@@ -79,7 +78,7 @@ public class TradeApplicationService {
             return;
         }
 
-        final TradeSignal signal = strategy.checkTradeSignal(candles, candles.size() - 2);
+        final TradeSignal signal = strategyFactory.createEmaCrossStrategy().checkTradeSignal(candles, candles.size() - 2);
 
         if (signal == TradeSignal.BUY) {
             if (orderService.canMakeNewOrder(lastOrder.orElse(null))) {

@@ -7,30 +7,28 @@ import com.takuro_tamura.autofx.domain.indicator.Rsi;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
 import com.takuro_tamura.autofx.domain.service.CandleService;
-import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.domain.service.indicator.AdxCalculator;
+import com.takuro_tamura.autofx.domain.strategy.config.StrategyConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 @RequiredArgsConstructor
 @Slf4j
 public class EmaCrossStrategy implements Strategy {
 
     private final CandleService candleService;
-    private final TradeConfigParameterService tradeConfigParameterService;
+    private final StrategyConfig config;
 
     @Override
     public TradeSignal checkTradeSignal(List<Candle> candles, int index) {
         final double[] adxValues = AdxCalculator.calculateAdx(
             candles,
-            tradeConfigParameterService.getAdxPeriod()
+            config.adxPeriod()
         );
 
-        final var adxFilter = new AdxEntryFilter(tradeConfigParameterService.getAdxThreshold());
+        final var adxFilter = new AdxEntryFilter(config.adxThreshold());
         if (!adxFilter.canEnter(adxValues)) {
             log.info("ADX filter not passed: ADX={}", adxValues[index]);
             return TradeSignal.NONE;
@@ -39,23 +37,23 @@ public class EmaCrossStrategy implements Strategy {
         final double[] closePrices = candleService.extractClosePrices(candles);
 
         final int[] emaPeriods = new int[]{
-            tradeConfigParameterService.getEmaPeriod1(),
-            tradeConfigParameterService.getEmaPeriod2()
+            config.emaPeriod1(),
+            config.emaPeriod2()
         };
         final Ema ema = new Ema(emaPeriods, closePrices);
 
         final BBands bBands = new BBands(
-            tradeConfigParameterService.getBBandsN(),
-            tradeConfigParameterService.getBBandsK(),
+            config.bBandsN(),
+            config.bBandsK(),
             closePrices
         );
 
-        final Rsi rsi = new Rsi(tradeConfigParameterService.getRsiPeriod(), closePrices);
+        final Rsi rsi = new Rsi(config.rsiPeriod(), closePrices);
 
         final Macd macd = new Macd(
-            tradeConfigParameterService.getMacdFastPeriod(),
-            tradeConfigParameterService.getMacdSlowPeriod(),
-            tradeConfigParameterService.getMacdSignalPeriod(),
+            config.macdFastPeriod(),
+            config.macdSlowPeriod(),
+            config.macdSignalPeriod(),
             closePrices
         );
 
