@@ -1,7 +1,6 @@
 package com.takuro_tamura.autofx.domain.model.entity;
 
 import com.takuro_tamura.autofx.domain.model.value.*;
-import com.takuro_tamura.autofx.presentation.controller.response.OrderRecord;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -59,19 +58,5 @@ public class Order {
             case SELL -> fillPrice.subtract(closePrice).getValue();
         };
         return diff.multiply(BigDecimal.valueOf(size));
-    }
-
-    public OrderRecord toRecord(TimeFrame timeFrame) {
-        return new OrderRecord(
-            orderId,
-            currencyPair,
-            side,
-            size,
-            status,
-            fillDatetime != null ? timeFrame.truncateTime(fillDatetime) : null,
-            fillPrice != null ? fillPrice.getValue().doubleValue() : null,
-            closeDatetime != null ? timeFrame.truncateTime(closeDatetime) : null,
-            closePrice != null ? closePrice.getValue().doubleValue() : null
-        );
     }
 }

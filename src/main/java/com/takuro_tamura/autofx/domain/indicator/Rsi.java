@@ -1,14 +1,13 @@
 package com.takuro_tamura.autofx.domain.indicator;
 
-import com.takuro_tamura.autofx.presentation.controller.response.RsiRecord;
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 import com.tictactec.ta.lib.RetCode;
 import lombok.Getter;
 
+@Getter
 public class Rsi {
     private final int period;
-    @Getter
     private final double[] values;
 
     public Rsi(int period, double[] closePrices) {
@@ -40,10 +39,6 @@ public class Rsi {
         }
 
         System.arraycopy(tmpRsi, 0, this.values, begin.value, length.value);
-    }
-
-    public RsiRecord toRecord() {
-        return new RsiRecord(period, values);
     }
 
     public boolean shouldBuy(int buyThread) {

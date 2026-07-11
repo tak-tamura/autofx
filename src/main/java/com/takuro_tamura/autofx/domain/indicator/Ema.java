@@ -1,13 +1,9 @@
 package com.takuro_tamura.autofx.domain.indicator;
 
-import com.takuro_tamura.autofx.presentation.controller.response.MaRecord;
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 import com.tictactec.ta.lib.RetCode;
 import lombok.Getter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 public class Ema {
@@ -45,14 +41,6 @@ public class Ema {
 
             System.arraycopy(tmp, 0, values[i], begin.value, length.value);
         }
-    }
-
-    public List<MaRecord> toRecords() {
-        final List<MaRecord> result = new ArrayList<>(periods.length);
-        for (int i = 0; i < periods.length; i++) {
-            result.add(new MaRecord(periods[i], values[i]));
-        }
-        return result;
     }
 
     public boolean shouldBuy() {

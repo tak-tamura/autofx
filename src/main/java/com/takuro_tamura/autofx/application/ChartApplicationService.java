@@ -14,6 +14,8 @@ import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterServic
 import com.takuro_tamura.autofx.domain.service.indicator.AdxCalculator;
 import com.takuro_tamura.autofx.presentation.controller.response.CandleDto;
 import com.takuro_tamura.autofx.presentation.controller.response.ChartResponse;
+import com.takuro_tamura.autofx.presentation.controller.response.factory.IndicatorRecordFactory;
+import com.takuro_tamura.autofx.presentation.controller.response.factory.OrderRecordFactory;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -35,6 +37,8 @@ public class ChartApplicationService {
     private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final TradeConfigParameterService tradeConfigParameterService;
+    private final IndicatorRecordFactory indicatorRecordFactory;
+    private final OrderRecordFactory orderRecordFactory;
 
     public ChartResponse getChart(GetChartCommand command) {
         //log.info("getChart called, param: {}", command);
@@ -65,7 +69,9 @@ public class ChartApplicationService {
                 }
             }
 
-            builder.orders(orders.stream().map(order -> order.toRecord(command.getTimeFrame())).collect(Collectors.toList()));
+            builder.orders(orders.stream()
+                .map(order -> orderRecordFactory.createOrderRecord(order, command.getTimeFrame()))
+                .collect(Collectors.toList()));
             builder.profit(orderService.accumulateProfit(orders).doubleValue());
         }
 
@@ -80,37 +86,49 @@ public class ChartApplicationService {
         final double[] closePrices = candleService.extractClosePrices(candles);
 
         if (command.isSmaEnabled()) {
-            builder.smas(new Sma(command.getSma().getPeriods(), closePrices).toRecords());
+            builder.smas(indicatorRecordFactory.createMaRecords(
+                new Sma(command.getSma().getPeriods(), closePrices)
+            ));
         }
 
         if (command.isEmaEnabled()) {
-            builder.emas(new Ema(command.getEma().getPeriods(), closePrices).toRecords());
+            builder.emas(indicatorRecordFactory.createMaRecords(
+                new Ema(command.getEma().getPeriods(), closePrices)
+            ));
         }
 
         if (command.isBBandsEnabled()) {
-            builder.bbands(new BBands(
-                command.getBbands().getN(),
-                command.getBbands().getK(),
-                closePrices
-            ).toRecord());
+            builder.bbands(indicatorRecordFactory.createBBandsRecord(
+                new BBands(
+                    command.getBbands().getN(),
+                    command.getBbands().getK(),
+                    closePrices
+                )
+            ));
         }
 
         if (command.isIchimokuEnabled()) {
-            builder.ichimoku(new IchimokuCloud(closePrices).toRecord());
+            builder.ichimoku(indicatorRecordFactory.createIchimokuRecord(
+                new IchimokuCloud(closePrices)
+            ));
         }
 
         if (command.isRsiEnabled()) {
-            builder.rsi(new Rsi(command.getRsi().getPeriod(), closePrices).toRecord());
+            builder.rsi(indicatorRecordFactory.createRsiRecord(
+                new Rsi(command.getRsi().getPeriod(), closePrices)
+            ));
         }
 
         if (command.isMacdEnabled()) {
             final MacdParam param = command.getMacd();
-            builder.macd(new Macd(
-                param.getInFastPeriod(),
-                param.getInSlowPeriod(),
-                param.getInSignalPeriod(),
-                closePrices
-            ).toRecord());
+            builder.macd(indicatorRecordFactory.createMacdRecord(
+                new Macd(
+                    param.getInFastPeriod(),
+                    param.getInSlowPeriod(),
+                    param.getInSignalPeriod(),
+                    closePrices
+                )
+            ));
         }
 
         if (command.isAdxEnabled()) {

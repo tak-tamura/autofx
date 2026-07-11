@@ -1,6 +1,5 @@
 package com.takuro_tamura.autofx.domain.indicator;
 
-import com.takuro_tamura.autofx.presentation.controller.response.BBandsRecord;
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MAType;
 import com.tictactec.ta.lib.MInteger;
@@ -56,10 +55,6 @@ public class BBands {
         System.arraycopy(tmpUp, 0, this.up, begin.value, length.value);
         System.arraycopy(tmpMid, 0, this.mid, begin.value, length.value);
         System.arraycopy(tmpDown, 0, this.down, begin.value, length.value);
-    }
-
-    public BBandsRecord toRecord() {
-        return new BBandsRecord(this.n, this.k, this.up, this.mid, this.down);
     }
 
     public boolean shouldBuy(double[] closePrices) {

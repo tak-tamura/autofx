@@ -1,20 +1,17 @@
 package com.takuro_tamura.autofx.domain.indicator;
 
-import com.takuro_tamura.autofx.presentation.controller.response.MacdRecord;
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 import com.tictactec.ta.lib.RetCode;
 import lombok.Getter;
 
+@Getter
 public class Macd {
     private final int fastPeriod;
     private final int slowPeriod;
     private final int signalPeriod;
-    @Getter
     private final double[] macd;
-    @Getter
     private final double[] macdSignal;
-    @Getter
     private final double[] macdHist;
 
     public Macd(int fastPeriod, int slowPeriod, int signalPeriod, double[] closePrices) {
@@ -58,10 +55,6 @@ public class Macd {
         System.arraycopy(tmpMacd, 0, this.macd, begin.value, length.value);
         System.arraycopy(tmpMacdSignal, 0, this.macdSignal, begin.value, length.value);
         System.arraycopy(tmpMacdHist, 0, this.macdHist, begin.value, length.value);
-    }
-
-    public MacdRecord toRecord() {
-        return new MacdRecord(fastPeriod, slowPeriod, signalPeriod, macd, macdSignal, macdHist);
     }
 
     public boolean shouldBuy() {

@@ -1,7 +1,5 @@
 package com.takuro_tamura.autofx.domain.indicator;
 
-import com.takuro_tamura.autofx.domain.model.entity.Candle;
-import com.takuro_tamura.autofx.presentation.controller.response.IchimokuRecord;
 import lombok.Getter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -53,10 +51,6 @@ public class IchimokuCloud {
         this.senkouA = ArrayUtils.toPrimitive(tmpSenkouA.toArray(new Double[0]));
         this.senkouB = ArrayUtils.toPrimitive(tmpSenkouB.toArray(new Double[0]));
         this.chikou = ArrayUtils.toPrimitive(tmpChikou.toArray(new Double[0]));
-    }
-
-    public IchimokuRecord toRecord() {
-        return new IchimokuRecord(tenkan, kijun, senkouA, senkouB, chikou);
     }
 
     public boolean shouldBuy(double high, double low) {
