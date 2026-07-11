@@ -7,13 +7,8 @@ import com.takuro_tamura.autofx.domain.model.value.OrderStatus;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.Price;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
-import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
-import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
-import com.takuro_tamura.autofx.infrastructure.external.adapter.PrivateApi;
-import com.takuro_tamura.autofx.infrastructure.external.enums.ExecutionType;
-import com.takuro_tamura.autofx.infrastructure.external.request.CloseOrderRequest;
-import com.takuro_tamura.autofx.infrastructure.external.request.OrderRequest;
-import com.takuro_tamura.autofx.infrastructure.external.response.OrderResponse;
+import com.takuro_tamura.autofx.domain.service.port.OrderPlacementPort;
+import com.takuro_tamura.autofx.domain.service.port.OrderCachePort;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +22,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderService {
     private final Logger log = LoggerFactory.getLogger(OrderService.class);
-    private final PrivateApi privateApi;
+    private final OrderPlacementPort orderPlacementPort;
+    private final OrderCachePort orderCachePort;
     private final CandleService candleService;
-    private final RedisCacheService redisCacheService;
     private final TradeConfigParameterService tradeConfigParameterService;
 
     public boolean shouldCloseOrder(Order order, Price currentPrice) {
@@ -82,15 +77,9 @@ public class OrderService {
      * @param size
      */
     public void makeOrder(CurrencyPair currencyPair, OrderSide type, int size) {
-        final OrderRequest request = OrderRequest.newMarketOrder()
-            .currencyPair(currencyPair)
-            .side(type)
-            .size(size)
-            .build();
-        log.info("Sending new order request: {}", request);
-
-        final OrderResponse response = privateApi.order(request);
-        log.info("Sent order request, order id: {}", response.getOrderId());
+        log.info("Sending new order request: currencyPair={}, side={}, size={}", currencyPair, type, size);
+        orderPlacementPort.submitMarketOrder(currencyPair, type, size);
+        log.info("Sent order request successfully");
     }
 
     /**
@@ -98,20 +87,14 @@ public class OrderService {
      * @param order
      */
     public void closeOrder(Order order) {
-        final CloseOrderRequest request = CloseOrderRequest.builder()
-            .currencyPair(order.getCurrencyPair())
-            .executionType(ExecutionType.MARKET)
-            .side(OrderSide.getCloseSide(order.getSide()))
-            .size(order.getSize())
-            .build();
-        log.info("Sending close order request: {}", request);
-
-        final OrderResponse response = privateApi.closeOrder(request).get(0);
-        log.info("Sent close order request, orderId: {}", response.getOrderId());
-
-        // 約定時にオーダー情報を更新するため、決済注文のオーダーIDをキーにして決済対象のオーダーのオーダーIDをRedisに保存しておく
-        redisCacheService.save(CacheKey.CLOSE_ORDER_ID.build(response.getOrderId().toString()), order.getOrderId());
-        log.info("Store orderId({}) with key({})", order.getOrderId(), response.getOrderId());
+        log.info("Sending close order request: {}", order);
+        
+        Long closeOrderId = orderPlacementPort.submitMarketCloseOrder(order);
+        log.info("Sent close order request, closeOrderId: {}", closeOrderId);
+        
+        // 約定時にオーダー情報を更新するため、決済注文のオーダーIDをキーにして決済対象のオーダーのオーダーIDをキャッシュに保存しておく
+        orderCachePort.mapCloseOrderToOriginalOrder(closeOrderId, order.getOrderId());
+        log.info("Store orderId({}) with closeOrderId({})", order.getOrderId(), closeOrderId);
     }
 
     public void makeStopAndProfitOrder(Order order) {
@@ -134,23 +117,14 @@ public class OrderService {
         );
         log.info("Calculated limitPrice: {}", limitPrice);
 
-        final CloseOrderRequest request = CloseOrderRequest.builder()
-            .currencyPair(order.getCurrencyPair())
-            .executionType(ExecutionType.OCO)
-            .side(OrderSide.getCloseSide(order.getSide()))
-            .size(order.getSize())
-            .stopPrice(stopPrice)
-            .limitPrice(limitPrice)
-            .build();
-
-        final List<OrderResponse> response = privateApi.closeOrder(request);
+        List<Long> closeOrderIds = orderPlacementPort.submitOcoOrder(order, stopPrice, limitPrice);
         log.info("Sent OCO order request, orderId: {}", order.getOrderId());
 
-        // 約定時にオーダー情報を更新するため、決済注文のオーダーIDをキーにして決済対象のオーダーのオーダーIDをRedisに保存しておく
-        response.forEach(it -> {
-            redisCacheService.save(CacheKey.CLOSE_ORDER_ID.build(it.getOrderId().toString()), order.getOrderId());
-            log.info("Store orderId({}) with key({})", order.getOrderId(), it.getOrderId());
-        });
+        // 約定時にオーダー情報を更新するため、決済注文のオーダーIDをキーにして決済対象のオーダーのオーダーIDをキャッシュに保存しておく
+        closeOrderIds.forEach(closeOrderId ->
+            orderCachePort.mapCloseOrderToOriginalOrder(closeOrderId, order.getOrderId())
+        );
+        log.info("Stored {} close order mappings for original orderId({})", closeOrderIds.size(), order.getOrderId());
     }
 
     /**

@@ -5,8 +5,7 @@ import com.takuro_tamura.autofx.domain.model.entity.Order;
 import com.takuro_tamura.autofx.domain.model.entity.OrderRepository;
 import com.takuro_tamura.autofx.domain.model.value.Price;
 import com.takuro_tamura.autofx.domain.service.OrderService;
-import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
-import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
+import com.takuro_tamura.autofx.domain.service.port.OrderCachePort;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ public class ExecutionApplicationService {
     private final Logger log = LoggerFactory.getLogger(ExecutionApplicationService.class);
     private final OrderService orderService;
     private final OrderRepository orderRepository;
-    private final RedisCacheService redisCacheService;
+    private final OrderCachePort orderCachePort;
 
     public void handleExecution(Execution execution) {
         switch (execution.getSettleType()) {
@@ -60,17 +59,16 @@ public class ExecutionApplicationService {
      */
     private void handleCloseExecution(Execution execution) {
         // 新規注文時のIDをキャッシュから取得
-        final String cacheKey = CacheKey.CLOSE_ORDER_ID.build(String.valueOf(execution.getOrderId()));
-        log.info("Get orderId from cache with key({})", execution.getOrderId());
+        log.info("Get orderId from cache with closeOrderId({})", execution.getOrderId());
 
         // 成行注文で決済注文した場合はorderIdのキャッシュが間に合わないのでsleepする
         try {
             Thread.sleep(1000L);
         } catch (InterruptedException ignored) {}
 
-        final Long orderId = redisCacheService.<Long>get(cacheKey)
+        final Long orderId = orderCachePort.getOriginalOrderId(execution.getOrderId())
             .orElseThrow(() -> new IllegalStateException("Cannot find root order id from cache"));
-        redisCacheService.delete(cacheKey);
+        orderCachePort.removeMapping(execution.getOrderId());
 
         // DB上のオーダー情報を更新
         final Order order = orderRepository.findByOrderId(orderId)
@@ -78,8 +76,5 @@ public class ExecutionApplicationService {
         order.close(LocalDateTime.now(), new Price(execution.getPrice()));
         orderRepository.update(order);
         log.info("Order updated: {}", order);
-
-        // 成行注文で決済した場合はOCO注文のオーダーIDがRedisに残るので削除する
-        redisCacheService.deleteKeysByValue(order.getOrderId());
     }
 }
