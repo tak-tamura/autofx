@@ -25,10 +25,9 @@ public class BackTestService {
     private final CandleService candleService;
     private final OrderService orderService;
     private final CandleRepository candleRepository;
-    private final Strategy strategy;
 
-    public double getBackTestProfitLoss(CurrencyPair currencyPair, TimeFrame timeFrame, int limit) {
-        final List<Order> orders = backTest(currencyPair, timeFrame, limit);
+    public double getBackTestProfitLoss(CurrencyPair currencyPair, TimeFrame timeFrame, int limit, Strategy strategy) {
+        final List<Order> orders = backTest(currencyPair, timeFrame, limit, strategy);
         if (CollectionUtils.isEmpty(orders)) {
             return 0.0;
         }
@@ -36,7 +35,7 @@ public class BackTestService {
         return orderService.accumulateProfit(orders).doubleValue();
     }
 
-    public List<Order> backTest(CurrencyPair currencyPair, TimeFrame timeFrame, int limit) {
+    public List<Order> backTest(CurrencyPair currencyPair, TimeFrame timeFrame, int limit, Strategy strategy) {
         final List<Candle> candles = candleRepository.findAllWithLimit(currencyPair, timeFrame, limit);
         if (CollectionUtils.isEmpty(candles)) {
             return Collections.emptyList();

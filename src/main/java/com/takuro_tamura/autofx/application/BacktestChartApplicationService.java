@@ -2,6 +2,7 @@ package com.takuro_tamura.autofx.application;
 
 import com.takuro_tamura.autofx.application.command.chart.GetChartCommand;
 import com.takuro_tamura.autofx.application.command.chart.MacdParam;
+import com.takuro_tamura.autofx.application.strategy.StrategyFactory;
 import com.takuro_tamura.autofx.domain.indicator.*;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
@@ -10,6 +11,7 @@ import com.takuro_tamura.autofx.domain.service.BackTestService;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.indicator.AdxCalculator;
+import com.takuro_tamura.autofx.domain.strategy.Strategy;
 import com.takuro_tamura.autofx.presentation.controller.response.CandleDto;
 import com.takuro_tamura.autofx.presentation.controller.response.ChartResponse;
 import com.takuro_tamura.autofx.presentation.controller.response.factory.IndicatorRecordFactory;
@@ -39,6 +41,7 @@ public class BacktestChartApplicationService {
     private final OrderService orderService;
     private final IndicatorRecordFactory indicatorRecordFactory;
     private final OrderRecordFactory orderRecordFactory;
+    private final StrategyFactory strategyFactory;
 
     /**
      * バックテスト用のチャートデータを取得
@@ -58,11 +61,15 @@ public class BacktestChartApplicationService {
         addIndicators(builder, command, candles);
 
         if (command.isIncludeOrder()) {
+            // GetChartCommand のパラメータを使用して Strategy を生成
+            final Strategy strategy = strategyFactory.createEmaCrossStrategy(command);
+            
             // バックテスト結果のオーダーを実行
             final List<Order> orders = backTestService.backTest(
                 command.getCurrencyPair(),
                 command.getTimeFrame(),
-                command.getLimit()
+                command.getLimit(),
+                strategy
             );
 
             builder.orders(orders.stream()
