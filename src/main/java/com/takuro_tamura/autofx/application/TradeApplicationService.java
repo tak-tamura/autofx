@@ -1,5 +1,6 @@
 package com.takuro_tamura.autofx.application;
 
+import com.takuro_tamura.autofx.application.calculator.OrderAmountCalculationService;
 import com.takuro_tamura.autofx.application.strategy.StrategyFactory;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
@@ -9,15 +10,10 @@ import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
-import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
 import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
-import com.takuro_tamura.autofx.infrastructure.external.adapter.PrivateApi;
-import com.takuro_tamura.autofx.infrastructure.external.adapter.PublicApi;
-import com.takuro_tamura.autofx.infrastructure.external.response.Assets;
-import com.takuro_tamura.autofx.infrastructure.external.response.Ticker;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -25,8 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,10 +34,9 @@ public class TradeApplicationService {
     private final TradeConfigParameterService tradeConfigParameterService;
     private final CandleRepository candleRepository;
     private final OrderRepository orderRepository;
-    private final PrivateApi privateApi;
-    private final PublicApi publicApi;
     private final RedisCacheService redisCacheService;
     private final StrategyFactory strategyFactory;
+    private final OrderAmountCalculationService orderAmountCalculationService;
 
     @Transactional
     public void trade() {
@@ -106,8 +99,7 @@ public class TradeApplicationService {
     }
 
     private void makeOrder(OrderSide type, CurrencyPair targetPair) {
-        final int orderAmount = calculateOrderAmount(type, targetPair);
-        log.info("Calculated order amount: {}", orderAmount);
+        final int orderAmount = orderAmountCalculationService.calculateOrderAmount(type, targetPair);
 
         if (orderAmount < MINIMUM_ORDER_QUANTITY) {
             log.warn("Not enough available amount, cannot make new order");
@@ -115,34 +107,5 @@ public class TradeApplicationService {
         }
 
         orderService.makeOrder(targetPair, type, orderAmount);
-    }
-
-    /**
-     * 取引する通貨の数量を計算する
-     * @param side 取引種別
-     * @return 取引数量
-     */
-    private int calculateOrderAmount(OrderSide side, CurrencyPair targetPair) {
-        // 現在の価格を取得
-        final Ticker ticker = publicApi.getTickers().stream()
-            .filter(it -> it.getSymbol() == targetPair)
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("cannot find ticker of " + targetPair.name()));
-
-        // 資産残高を取得
-        final Assets assets = privateApi.getAssets();
-        log.info("Available asset amount: {}", assets.getAvailableAmount());
-
-        // 取引可能金額 = 取引に使用する資産の割合 * 資産残高 * レバレッジ
-        final BigDecimal availableAmount = tradeConfigParameterService.getAvailableBalanceRate()
-            .multiply(BigDecimal.valueOf(assets.getAvailableAmount()))
-            .multiply(tradeConfigParameterService.getLeverage());
-
-        // 1通貨あたりの金額にAPIコストを加算
-        final BigDecimal price = (side == OrderSide.BUY) ? new BigDecimal(ticker.getAsk()) : new BigDecimal(ticker.getBid());
-        final BigDecimal priceWithApiCost = price.add(tradeConfigParameterService.getApiCost());
-
-        // 取引可能金額 / 1通貨あたりの金額が取引数量
-        return availableAmount.divide(priceWithApiCost, RoundingMode.HALF_DOWN).intValue();
     }
 }
