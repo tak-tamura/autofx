@@ -3,6 +3,7 @@ package com.takuro_tamura.autofx.presentation.controller;
 import com.takuro_tamura.autofx.application.TradeConfigParameterApplicationService;
 import com.takuro_tamura.autofx.application.TradeStateApplicationService;
 import com.takuro_tamura.autofx.application.command.TradeConfigUpdateCommand;
+import com.takuro_tamura.autofx.application.state.TradeScheduler;
 import com.takuro_tamura.autofx.presentation.controller.request.ScheduleRequest;
 import com.takuro_tamura.autofx.presentation.controller.response.TradeConfigResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class TradeController {
     private final TradeStateApplicationService tradeSettingApplicationService;
+    private final TradeScheduler tradeScheduler;
 
     private final TradeConfigParameterApplicationService tradeConfigParameterApplicationService;
 
@@ -25,7 +27,7 @@ public class TradeController {
 
     @PostMapping("/suspend/schedule")
     public ResponseEntity<?> scheduleSuspendTrade(@RequestBody ScheduleRequest request) {
-        tradeSettingApplicationService.scheduleSuspendTrade(request.getTime());
+        tradeScheduler.scheduleSuspendTrade(request.getTime());
         return ResponseEntity.ok("ok");
     }
 
@@ -37,7 +39,7 @@ public class TradeController {
 
     @PostMapping("/resume/schedule")
     public ResponseEntity<?> scheduleResumeTrade(@RequestBody ScheduleRequest request) {
-        tradeSettingApplicationService.scheduleResumeTrade(request.getTime());
+        tradeScheduler.scheduleResumeTrade(request.getTime());
         return ResponseEntity.ok("ok");
     }
 

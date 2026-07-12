@@ -1,6 +1,7 @@
 package com.takuro_tamura.autofx.application;
 
 import com.takuro_tamura.autofx.application.calculator.OrderAmountCalculationService;
+import com.takuro_tamura.autofx.application.state.TradeStatePortal;
 import com.takuro_tamura.autofx.application.strategy.StrategyFactory;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
@@ -10,10 +11,9 @@ import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
+import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
-import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
-import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -30,19 +30,18 @@ public class TradeApplicationService {
     private final static int MINIMUM_ORDER_QUANTITY = 10000;
 
     private final Logger log = LoggerFactory.getLogger(TradeApplicationService.class);
+    private final CandleService candleService;
     private final OrderService orderService;
     private final TradeConfigParameterService tradeConfigParameterService;
     private final CandleRepository candleRepository;
     private final OrderRepository orderRepository;
-    private final RedisCacheService redisCacheService;
     private final StrategyFactory strategyFactory;
     private final OrderAmountCalculationService orderAmountCalculationService;
+    private final TradeStatePortal tradeStatePortal;
 
     @Transactional
     public void trade() {
-        final Boolean tradeEnabled = redisCacheService.<Boolean>get(CacheKey.TRADE_ENABLED.getKey())
-            .orElse(Boolean.TRUE);
-        if (!tradeEnabled) {
+        if (!tradeStatePortal.isTradingEnabled()) {
             log.info("Trade is disabled");
             return;
         }

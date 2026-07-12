@@ -6,41 +6,31 @@ import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.infrastructure.cache.CacheKey;
 import com.takuro_tamura.autofx.infrastructure.cache.RedisCacheService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-
+/**
+ * トレード状態管理サービス
+ * トレード有効化/無効化とそれに伴う処理を実行
+ * スケジューリングは TradeScheduler で処理
+ */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class TradeStateApplicationService {
-    private final Logger log = LoggerFactory.getLogger(TradeStateApplicationService.class);
+
     private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final RedisCacheService redisCacheService;
     private final TradeConfigParameterService tradeConfigParameterService;
-    private final TaskScheduler taskScheduler;
 
-    public TradeStateApplicationService(
-        OrderService orderService,
-        OrderRepository orderRepository,
-        RedisCacheService redisCacheService,
-        TradeConfigParameterService tradeConfigParameterService
-    ) {
-        this.orderService = orderService;
-        this.orderRepository = orderRepository;
-        this.redisCacheService = redisCacheService;
-        this.tradeConfigParameterService = tradeConfigParameterService;
-
-        final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.initialize();
-        this.taskScheduler = scheduler;
-    }
-
+    /**
+     * トレード停止処理
+     * - キャッシュにトレード無効フラグを設定
+     * - 開いているポジションがあれば決済注文を発行
+     */
     @Transactional
     public void suspendTrade() {
         redisCacheService.save(CacheKey.TRADE_ENABLED.getKey(), Boolean.FALSE);
@@ -53,23 +43,11 @@ public class TradeStateApplicationService {
             });
     }
 
-    public void scheduleSuspendTrade(LocalDateTime time) {
-        taskScheduler.schedule(() -> {
-            log.info("Suspend trade by scheduled task");
-            suspendTrade();
-        }, time.atZone(ZoneId.of("Asia/Tokyo")).toInstant());
-        log.info("Scheduled trade suspension at {}", time);
-    }
-
+    /**
+     * トレード再開処理
+     * - キャッシュにトレード有効フラグを設定
+     */
     public void resumeTrade() {
         redisCacheService.save(CacheKey.TRADE_ENABLED.getKey(), Boolean.TRUE);
-    }
-
-    public void scheduleResumeTrade(LocalDateTime time) {
-        taskScheduler.schedule(() -> {
-            log.info("Resume trade by scheduled task");
-            resumeTrade();
-        }, time.atZone(ZoneId.of("Asia/Tokyo")).toInstant());
-        log.info("Scheduled trade resume at {}", time);
     }
 }
