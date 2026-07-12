@@ -64,6 +64,6 @@ public class Candle {
     }
 
     public boolean shouldUpdateLowPrice(Price currentPrice) {
-        return this.high.compareTo(currentPrice) > 0;
+        return this.low.compareTo(currentPrice) > 0;
     }
 }
