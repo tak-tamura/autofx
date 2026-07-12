@@ -2,7 +2,7 @@ package com.takuro_tamura.autofx.application;
 
 import com.takuro_tamura.autofx.application.calculator.OrderAmountCalculationService;
 import com.takuro_tamura.autofx.application.state.TradeStatePortal;
-import com.takuro_tamura.autofx.application.strategy.StrategyFactory;
+import com.takuro_tamura.autofx.application.validator.TradeSignalValidator;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
 import com.takuro_tamura.autofx.domain.model.entity.Order;
@@ -35,9 +35,9 @@ public class TradeApplicationService {
     private final TradeConfigParameterService tradeConfigParameterService;
     private final CandleRepository candleRepository;
     private final OrderRepository orderRepository;
-    private final StrategyFactory strategyFactory;
     private final OrderAmountCalculationService orderAmountCalculationService;
     private final TradeStatePortal tradeStatePortal;
+    private final TradeSignalValidator tradeSignalValidator;
 
     @Transactional
     public void trade() {
@@ -59,38 +59,33 @@ public class TradeApplicationService {
             tradeConfigParameterService.getMaxCandleNum()
         );
 
-        final Optional<Order> lastOrder = orderRepository.findLatestByCurrencyPairWithLock(targetPair);
-        final Candle latestCandle = candles.get(candles.size() - 1);
-        if (orderService.shouldCloseOrder(lastOrder.orElse(null), latestCandle.getClose())) {
-            lastOrder.ifPresent(orderService::closeOrder);
-        }
-
         if (CollectionUtils.size(candles) < 2) {
             log.info("Not sufficient candles found({}), abort trading", CollectionUtils.size(candles));
             return;
         }
 
-        final TradeSignal signal = strategyFactory.createEmaCrossStrategy().checkTradeSignal(candles, candles.size() - 2);
+        final Optional<Order> lastOrder = orderRepository.findLatestByCurrencyPairWithLock(targetPair);
+        final Candle latestCandle = candles.get(candles.size() - 1);
+
+        // Handle closing current position
+        if (tradeSignalValidator.shouldCloseOrder(lastOrder.orElse(null), latestCandle.getClose())) {
+            lastOrder.ifPresent(orderService::closeOrder);
+        }
+
+        // Generate and process trading signal
+        final TradeSignal signal = tradeSignalValidator.generateSignal(candles);
 
         if (signal == TradeSignal.BUY) {
-            if (orderService.canMakeNewOrder(lastOrder.orElse(null))) {
+            if (tradeSignalValidator.canMakeNewOrder(lastOrder.orElse(null))) {
                 makeOrder(OrderSide.BUY, targetPair);
-            } else {
-                lastOrder.ifPresent(order -> {
-                    if (order.getSide() != OrderSide.BUY) {
-                        orderService.closeOrder(order);
-                    }
-                });
+            } else if (tradeSignalValidator.isOppositeSignal(signal, lastOrder.orElse(null))) {
+                lastOrder.ifPresent(orderService::closeOrder);
             }
         } else if (signal == TradeSignal.SELL) {
-            if (orderService.canMakeNewOrder(lastOrder.orElse(null))) {
+            if (tradeSignalValidator.canMakeNewOrder(lastOrder.orElse(null))) {
                 makeOrder(OrderSide.SELL, targetPair);
-            } else {
-                lastOrder.ifPresent(order -> {
-                    if (order.getSide() != OrderSide.SELL) {
-                        orderService.closeOrder(order);
-                    }
-                });
+            } else if (tradeSignalValidator.isOppositeSignal(signal, lastOrder.orElse(null))) {
+                lastOrder.ifPresent(orderService::closeOrder);
             }
         } else {
             log.info("Skip trading this time because of no trading signal");
