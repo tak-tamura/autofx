@@ -6,7 +6,7 @@ import com.takuro_tamura.autofx.domain.indicator.*;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
 import com.takuro_tamura.autofx.domain.model.entity.Order;
-import com.takuro_tamura.autofx.domain.model.entity.OrderRepository;
+import com.takuro_tamura.autofx.domain.service.BackTestService;
 import com.takuro_tamura.autofx.domain.service.CandleService;
 import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.indicator.AdxCalculator;
@@ -26,25 +26,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * ライブトレード時のチャート表示データを取得するサービス
- * バックテスト処理は BacktestChartApplicationService で処理
+ * バックテスト実行時のチャート表示データを取得するサービス
+ * ライブトレード時の表示は ChartApplicationService で処理
  */
 @Service
 @RequiredArgsConstructor
-public class ChartApplicationService {
-    private final Logger log = LoggerFactory.getLogger(ChartApplicationService.class);
+public class BacktestChartApplicationService {
+    private final Logger log = LoggerFactory.getLogger(BacktestChartApplicationService.class);
+    private final BackTestService backTestService;
     private final CandleService candleService;
     private final CandleRepository candleRepository;
-    private final OrderRepository orderRepository;
     private final OrderService orderService;
     private final IndicatorRecordFactory indicatorRecordFactory;
     private final OrderRecordFactory orderRecordFactory;
 
     /**
-     * ライブチャート用のチャートデータを取得
-     * ロウソク足、指標、実トレードのオーダーを返す
+     * バックテスト用のチャートデータを取得
+     * ロウソク足、指標、バックテスト結果のオーダーを返す
      */
-    public ChartResponse getChart(GetChartCommand command) {
+    public ChartResponse getBacktestChart(GetChartCommand command) {
         final List<Candle> candles = candleRepository.findAllWithLimit(
             command.getCurrencyPair(),
             command.getTimeFrame(),
@@ -58,16 +58,12 @@ public class ChartApplicationService {
         addIndicators(builder, command, candles);
 
         if (command.isIncludeOrder()) {
-            // ライブトレードのオーダーのみ取得（バックテストは対象外）
-            final List<Order> orders;
-            if (CollectionUtils.isNotEmpty(candles)) {
-                orders = orderRepository.findByCurrencyPairAfterTime(
-                    command.getCurrencyPair(),
-                    candles.get(0).getTime()
-                );
-            } else {
-                orders = Collections.emptyList();
-            }
+            // バックテスト結果のオーダーを実行
+            final List<Order> orders = backTestService.backTest(
+                command.getCurrencyPair(),
+                command.getTimeFrame(),
+                command.getLimit()
+            );
 
             builder.orders(orders.stream()
                 .map(order -> orderRecordFactory.createOrderRecord(order, command.getTimeFrame()))
