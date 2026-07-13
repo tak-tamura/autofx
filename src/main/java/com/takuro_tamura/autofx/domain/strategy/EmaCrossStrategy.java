@@ -29,7 +29,7 @@ public class EmaCrossStrategy implements Strategy {
         );
 
         final var adxFilter = new AdxEntryFilter(config.adxThreshold());
-        if (!adxFilter.canEnter(adxValues)) {
+        if (!adxFilter.canEnter(adxValues, index)) {
             log.info("ADX filter not passed: ADX={}", adxValues[index]);
             return TradeSignal.NONE;
         }
