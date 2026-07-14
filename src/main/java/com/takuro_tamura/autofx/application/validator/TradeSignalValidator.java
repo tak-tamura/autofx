@@ -54,13 +54,13 @@ public class TradeSignalValidator {
     }
 
     /**
-     * 新規注文を作成可能か判定
+     * 未決済ポジションが存在するか判定
      *
-     * @param lastOrder 直前の注文（null の場合は新規作成可能）
-     * @return true: 新規注文を作成可能
+     * @param lastOrder 直前の注文（null の場合は未決済ポジションなし）
+     * @return true: 未決済ポジションあり
      */
-    public boolean canMakeNewOrder(Order lastOrder) {
-        return orderService.canMakeNewOrder(lastOrder);
+    public boolean hasOpenPosition(Order lastOrder) {
+        return orderService.hasOpenPosition(lastOrder);
     }
 
     /**

@@ -6,7 +6,9 @@ import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderStatus;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.Price;
+import com.takuro_tamura.autofx.domain.model.value.ProtectionLevels;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
+import com.takuro_tamura.autofx.domain.service.indicator.AtrCalculator;
 import com.takuro_tamura.autofx.domain.service.port.OrderPlacementPort;
 import com.takuro_tamura.autofx.domain.service.port.OrderCachePort;
 import lombok.RequiredArgsConstructor;
@@ -32,42 +34,37 @@ public class OrderService {
             return false;
         }
 
-        // 利益確定・損切りラインに達していたらclose
-        final BigDecimal atr = calculateAtr();
+        final ProtectionLevels protectionLevels = order.getProtectionLevels() != null
+            ? order.getProtectionLevels()
+            : createProtectionLevels(
+                order,
+                calculateLatestAtr(),
+                tradeConfigParameterService.getStopLimit(),
+                tradeConfigParameterService.getProfitLimit()
+            );
 
-        final double stopPrice = calculateStopPrice(
-            order.getFillPrice().getValue(),
-            tradeConfigParameterService.getStopLimit(),
-            atr,
-            order.getSide()
-        );
-
-        final double limitPrice = calculateLimitPrice(
-            order.getFillPrice().getValue(),
-            tradeConfigParameterService.getProfitLimit(),
-            atr,
-            order.getSide()
-        );
+        final BigDecimal stopPrice = protectionLevels.stopPrice().getValue();
+        final BigDecimal limitPrice = protectionLevels.takeProfitPrice().getValue();
 
         if (order.getSide() == OrderSide.BUY) {
             // 利益確定
-            if (currentPrice.getValue().doubleValue() >= limitPrice) {
+            if (currentPrice.getValue().compareTo(limitPrice) >= 0) {
                 return true;
             }
             // 損切り
-            return currentPrice.getValue().doubleValue() <= stopPrice;
+            return currentPrice.getValue().compareTo(stopPrice) <= 0;
         } else {
             // 利益確定
-            if (currentPrice.getValue().doubleValue() <= limitPrice) {
+            if (currentPrice.getValue().compareTo(limitPrice) <= 0) {
                 return true;
             }
             // 損切り
-            return currentPrice.getValue().doubleValue() >= stopPrice;
+            return currentPrice.getValue().compareTo(stopPrice) >= 0;
         }
     }
 
-    public boolean canMakeNewOrder(Order lastOrder) {
-        return lastOrder == null || lastOrder.getStatus().isCompleted();
+    public boolean hasOpenPosition(Order lastOrder) {
+        return lastOrder != null && !lastOrder.getStatus().isCompleted();
     }
 
     /**
@@ -98,23 +95,19 @@ public class OrderService {
     }
 
     public void makeStopAndProfitOrder(Order order) {
-        final BigDecimal atr = calculateAtr();
+        final BigDecimal atr = calculateLatestAtr();
         log.info("Calculated ATR: {}", atr.doubleValue());
 
-        final double stopPrice = calculateStopPrice(
-            order.getFillPrice().getValue(),
-            tradeConfigParameterService.getStopLimit(),
+        final ProtectionLevels protectionLevels = createProtectionLevels(
+            order,
             atr,
-            order.getSide()
+            tradeConfigParameterService.getStopLimit(),
+            tradeConfigParameterService.getProfitLimit()
         );
+        final double stopPrice = protectionLevels.stopPrice().getValue().doubleValue();
         log.info("Calculated stopPrice: {}", stopPrice);
 
-        final double limitPrice = calculateLimitPrice(
-            order.getFillPrice().getValue(),
-            tradeConfigParameterService.getProfitLimit(),
-            atr,
-            order.getSide()
-        );
+        final double limitPrice = protectionLevels.takeProfitPrice().getValue().doubleValue();
         log.info("Calculated limitPrice: {}", limitPrice);
 
         List<Long> closeOrderIds = orderPlacementPort.submitOcoOrder(order, stopPrice, limitPrice);
@@ -138,21 +131,31 @@ public class OrderService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public void handleBackTestOrder(OrderSide side, List<Order> orders, Order lastOrder, Candle candle) {
-        if (canMakeNewOrder(lastOrder)) {
-            final Order order = createDummyOrder(candle, side, candle.getClose());
-            orders.add(order);
-            log.debug("Make new order at {}, side: {}, price: {}", candle.getTime(), side, candle.getClose());
-        } else {
-            if (lastOrder != null && lastOrder.getSide() != side) {
-                lastOrder.close(candle.getTime(), candle.getClose());
-                log.debug("Close order at {}, side: {}, price: {}, profit: {}",
-                    candle.getTime(),
-                    lastOrder.getSide(),
-                    candle.getClose(),
-                    lastOrder.calculateProfit()
-                );
-            }
+    public Order handleBackTestOrder(OrderSide side, List<Order> orders, Order lastOrder, Candle candle) {
+        if (hasOpenPosition(lastOrder)) {
+            closeBackTestOrderIfOpposite(side, lastOrder, candle);
+            return null;
+        }
+        final Order order = createBackTestOrder(side, candle);
+        orders.add(order);
+        return order;
+    }
+
+    public Order createBackTestOrder(OrderSide side, Candle candle) {
+        final Order order = createDummyOrder(candle, side, candle.getClose());
+        log.debug("Create new order at {}, side: {}, price: {}", candle.getTime(), side, candle.getClose());
+        return order;
+    }
+
+    void closeBackTestOrderIfOpposite(OrderSide signalSide, Order openOrder, Candle candle) {
+        if (openOrder.getSide() != signalSide) {
+            openOrder.close(candle.getTime(), candle.getClose());
+            log.debug("Close order at {}, side: {}, price: {}, profit: {}",
+                candle.getTime(),
+                openOrder.getSide(),
+                candle.getClose(),
+                openOrder.calculateProfit()
+            );
         }
     }
 
@@ -167,34 +170,63 @@ public class OrderService {
         );
     }
 
-    private double calculateStopPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
+    public ProtectionLevels createProtectionLevels(
+        Order order,
+        BigDecimal atr,
+        BigDecimal stopMultiplier,
+        BigDecimal profitMultiplier
+    ) {
+        if (order == null || order.getFillPrice() == null || order.getSide() == null) {
+            throw new IllegalArgumentException("Filled order is required to calculate protection levels");
+        }
+        if (atr == null || atr.signum() <= 0) {
+            throw new IllegalArgumentException("ATR must be greater than zero");
+        }
+        if (stopMultiplier == null || stopMultiplier.signum() <= 0) {
+            throw new IllegalArgumentException("Stop multiplier must be greater than zero");
+        }
+        if (profitMultiplier == null || profitMultiplier.signum() <= 0) {
+            throw new IllegalArgumentException("Profit multiplier must be greater than zero");
+        }
+
+        final Price stopPrice = calculateStopPrice(
+            order.getFillPrice().getValue(),
+            stopMultiplier,
+            atr,
+            order.getSide()
+        );
+        final Price takeProfitPrice = calculateLimitPrice(
+            order.getFillPrice().getValue(),
+            profitMultiplier,
+            atr,
+            order.getSide()
+        );
+        return new ProtectionLevels(atr, stopPrice, takeProfitPrice);
+    }
+
+    private Price calculateStopPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
         final BigDecimal raw = (side == OrderSide.BUY)
             ? price.subtract(limit.multiply(atr))
             : price.add(limit.multiply(atr));
 
         final BigDecimal scaled = raw.setScale(3, RoundingMode.DOWN);
 
-        return scaled.doubleValue();
+        return new Price(scaled);
     }
 
-    private double calculateLimitPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
+    private Price calculateLimitPrice(BigDecimal price, BigDecimal limit, BigDecimal atr, OrderSide side) {
         final BigDecimal raw = (side == OrderSide.BUY)
             ? price.add(limit.multiply(atr))
             : price.subtract(limit.multiply(atr));
 
         final BigDecimal scaled = raw.setScale(3, RoundingMode.DOWN);
 
-        return scaled.doubleValue();
+        return new Price(scaled);
     }
 
-    private BigDecimal calculateAtr() {
+    private BigDecimal calculateLatestAtr() {
         final int atrPeriod = tradeConfigParameterService.getAtrPeriod();
-        final double[] trValues = candleService.getTR(atrPeriod);
-        double atr = 0.0;
-        for (double tr : trValues) {
-            atr += tr;
-        }
-        atr /= atrPeriod;
-        return BigDecimal.valueOf(atr);
+        final List<Candle> candles = candleService.getLatestCandles(atrPeriod + 1);
+        return AtrCalculator.calculate(candles, candles.size() - 1, atrPeriod);
     }
 }

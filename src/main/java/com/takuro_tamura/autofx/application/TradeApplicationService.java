@@ -76,13 +76,13 @@ public class TradeApplicationService {
         final TradeSignal signal = tradeSignalValidator.generateSignal(candles);
 
         if (signal == TradeSignal.BUY) {
-            if (tradeSignalValidator.canMakeNewOrder(lastOrder.orElse(null))) {
+            if (!tradeSignalValidator.hasOpenPosition(lastOrder.orElse(null))) {
                 makeOrder(OrderSide.BUY, targetPair);
             } else if (tradeSignalValidator.isOppositeSignal(signal, lastOrder.orElse(null))) {
                 lastOrder.ifPresent(orderService::closeOrder);
             }
         } else if (signal == TradeSignal.SELL) {
-            if (tradeSignalValidator.canMakeNewOrder(lastOrder.orElse(null))) {
+            if (!tradeSignalValidator.hasOpenPosition(lastOrder.orElse(null))) {
                 makeOrder(OrderSide.SELL, targetPair);
             } else if (tradeSignalValidator.isOppositeSignal(signal, lastOrder.orElse(null))) {
                 lastOrder.ifPresent(orderService::closeOrder);

@@ -7,6 +7,8 @@ import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
+import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
+import com.takuro_tamura.autofx.domain.service.indicator.AtrCalculator;
 import com.takuro_tamura.autofx.domain.strategy.Strategy;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -14,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +28,7 @@ public class BackTestService {
     private final CandleService candleService;
     private final OrderService orderService;
     private final CandleRepository candleRepository;
+    private final TradeConfigParameterService tradeConfigParameterService;
 
     public double getBackTestProfitLoss(CurrencyPair currencyPair, TimeFrame timeFrame, int limit, Strategy strategy) {
         final List<Order> orders = backTest(currencyPair, timeFrame, limit, strategy);
@@ -40,6 +44,12 @@ public class BackTestService {
         if (CollectionUtils.isEmpty(candles)) {
             return Collections.emptyList();
         }
+
+        final BacktestRiskParameters riskParameters = new BacktestRiskParameters(
+            tradeConfigParameterService.getAtrPeriod(),
+            tradeConfigParameterService.getStopLimit(),
+            tradeConfigParameterService.getProfitLimit()
+        );
 
         final List<Order> orders = new ArrayList<>();
         Order lastOrder;
@@ -63,13 +73,81 @@ public class BackTestService {
 
             final TradeSignal signal = strategy.checkTradeSignal(candles, i);
 
-            switch (signal) {
-                case BUY -> orderService.handleBackTestOrder(OrderSide.BUY, orders, lastOrder, candle);
-                case SELL -> orderService.handleBackTestOrder(OrderSide.SELL, orders, lastOrder, candle);
-                case NONE -> {}
+            final Order openedOrder = switch (signal) {
+                case BUY -> handleSignal(OrderSide.BUY, orders, lastOrder, candle, candles, i, riskParameters);
+                case SELL -> handleSignal(OrderSide.SELL, orders, lastOrder, candle, candles, i, riskParameters);
+                case NONE -> null;
+            };
+
+            if (openedOrder != null) {
+                log.debug(
+                    "BackTest protection fixed at {}, side: {}, ATR: {}, stopPrice: {}, takeProfitPrice: {}",
+                    candle.getTime(),
+                    openedOrder.getSide(),
+                    openedOrder.getProtectionLevels().entryAtr(),
+                    openedOrder.getProtectionLevels().stopPrice(),
+                    openedOrder.getProtectionLevels().takeProfitPrice()
+                );
             }
         }
 
         return orders;
+    }
+
+    private Order handleSignal(
+        OrderSide side,
+        List<Order> orders,
+        Order lastOrder,
+        Candle candle,
+        List<Candle> candles,
+        int evaluationIndex,
+        BacktestRiskParameters riskParameters
+    ) {
+        if (orderService.hasOpenPosition(lastOrder)) {
+            orderService.closeBackTestOrderIfOpposite(side, lastOrder, candle);
+            return null;
+        }
+        if (evaluationIndex < riskParameters.atrPeriod()) {
+            log.debug(
+                "Skip BackTest entry at {} because ATR({}) is not available at index {}",
+                candle.getTime(),
+                riskParameters.atrPeriod(),
+                evaluationIndex
+            );
+            return null;
+        }
+
+        final BigDecimal atr = AtrCalculator.calculate(
+            candles,
+            evaluationIndex,
+            riskParameters.atrPeriod()
+        );
+        final Order openedOrder = orderService.createBackTestOrder(side, candle);
+        openedOrder.fixProtectionLevels(orderService.createProtectionLevels(
+            openedOrder,
+            atr,
+            riskParameters.stopMultiplier(),
+            riskParameters.profitMultiplier()
+        ));
+        orders.add(openedOrder);
+        return openedOrder;
+    }
+
+    private record BacktestRiskParameters(
+        int atrPeriod,
+        BigDecimal stopMultiplier,
+        BigDecimal profitMultiplier
+    ) {
+        private BacktestRiskParameters {
+            if (atrPeriod <= 0) {
+                throw new IllegalArgumentException("ATR period must be greater than zero");
+            }
+            if (stopMultiplier == null || stopMultiplier.signum() <= 0) {
+                throw new IllegalArgumentException("Stop multiplier must be greater than zero");
+            }
+            if (profitMultiplier == null || profitMultiplier.signum() <= 0) {
+                throw new IllegalArgumentException("Profit multiplier must be greater than zero");
+            }
+        }
     }
 }

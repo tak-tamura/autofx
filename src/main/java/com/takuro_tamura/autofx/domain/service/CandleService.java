@@ -24,23 +24,14 @@ public class CandleService {
             .toArray();
     }
 
-    public double[] getTR(int period) {
-        final List<Candle> candles = candleRepository.findAllWithLimit(
+    public List<Candle> getLatestCandles(int limit) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Candle limit must be greater than zero");
+        }
+        return candleRepository.findAllWithLimit(
             tradeConfigParameterService.getTargetCurrencyPair(),
             tradeConfigParameterService.getTargetTimeFrame(),
-            period + 1
+            limit
         );
-
-        final double[] trValues = new double[period];
-
-        for (int i = 1; i < candles.size(); i++) {
-            final BigDecimal tr1 = candles.get(i).getHigh().subtract(candles.get(i).getLow()).getValue();
-            final BigDecimal tr2 = candles.get(i).getHigh().subtract(candles.get(i - 1).getClose()).getValue().abs();
-            final BigDecimal tr3 = candles.get(i).getLow().subtract(candles.get(i - 1).getClose()).getValue().abs();
-            final BigDecimal tr = tr1.max(tr2).max(tr3);
-            trValues[i - 1] = tr.doubleValue();
-        }
-
-        return trValues;
     }
 }
