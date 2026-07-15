@@ -205,6 +205,8 @@ The current baseline strategy for USD/JPY on the one-hour timeframe is understoo
 
 Do not change this baseline, re-enable ADX, add rescue entries, modify indicator thresholds, or alter ATR multipliers without an explicit request.
 
+The baseline values above describe the reference strategy, but the active strategy parameters are stored in the database and can be changed from the settings screen. Therefore, seed values and values in an existing environment may legitimately differ from this reference. Do not overwrite active database values merely to make them match this section. When investigating or changing trading behavior, verify and report the parameters actually active in the target environment.
+
 A change to strategy behavior must include tests and a description of its expected effect on:
 
 - Signal frequency

@@ -10,8 +10,6 @@ services:
       MYSQL_PASSWORD: s4t1ns3n
       TZ: "Asia/Tokyo"
     volumes:
-      - ./ddl:/docker-entrypoint-initdb.d
-      - ./seed:/docker-entrypoint-initdb.d
       - db-store:/var/lib/mysql
   redis:
     image: redis:6.2.11

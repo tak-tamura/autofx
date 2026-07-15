@@ -72,7 +72,9 @@ export API_SECRET="your-api-secret"
 
 ### 取引設定
 
-取引設定はYAMLファイルではなく、MySQLの `config_parameter` テーブルに保存されます。初期値は `src/main/resources/docker-compose/seed/config_parameter.sql` にあります。
+取引設定はYAMLファイルではなく、MySQLの `config_parameter` テーブルに保存されます。新規DBの初期値はFlywayマイグレーション `src/main/resources/db/migration/V2__initial_config_parameters.sql` にあります。
+
+ここに記載する基準戦略と、新規DBのseedまたは設定画面で変更された実際の設定値は異なる場合があります。稼働中の取引条件を確認するときは、対象環境の `config_parameter` を参照してください。
 
 設定はフロントエンドの取引設定画面、または次のAPIから取得・更新されます。
 
@@ -131,7 +133,13 @@ docker compose -f src/main/resources/docker-compose/docker-compose.yml up -d
 - MySQL: `localhost:3306`
 - Redis: `localhost:16379`
 
-注意: 現在のComposeファイルはDDLとseedを同じコンテナパスへマウントしており、`docker compose config` の解決結果ではseed側だけが残ります。空のDBボリュームから構築する場合は、`src/main/resources/docker-compose/ddl/` のDDLを適用してからseedを投入する必要があります。
+MySQLコンテナはDBを起動するだけで、スキーマと初期データはバックエンド起動時にFlywayが適用します。空のDBでは `V1__initial_schema.sql` と `V2__initial_config_parameters.sql` が順番に実行されます。
+
+### DBを初期状態から再構築する
+
+今回のFlyway導入では既存DBをbaselineせず、空のDBから再構築します。必要なデータをバックアップしたうえでDBボリュームを作り直し、MySQL起動後にバックエンドを起動してください。Flywayが`V1`から未適用マイグレーションを順番に実行します。
+
+誤って既存DBを自動baselineすることを防ぐため、`spring.flyway.baseline-on-migrate`は`false`にしています。以後、DDL/DMLを追加するときは適用済みファイルを変更せず、次のversion番号を持つSQLを `src/main/resources/db/migration/` に追加してください。
 
 ### 2. バックエンドを起動する
 

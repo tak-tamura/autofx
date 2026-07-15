@@ -15,6 +15,11 @@ spring:
       max-lifetime: 1800000   # 30 minutes
       idle-timeout: 600000    # 10 minutes
       validation-timeout: 5000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    clean-disabled: true
   data:
     redis:
       host: localhost
