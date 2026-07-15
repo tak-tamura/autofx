@@ -50,7 +50,17 @@ public class ExecutionApplicationService {
             // POST APIは秒間1件しか呼び出せないのでsleepする
             Thread.sleep(1000L);
         } catch (InterruptedException ignored) {}
-        orderService.makeStopAndProfitOrder(order);
+        orderCachePort.getEntryAtr(execution.getOrderId()).ifPresentOrElse(
+            atr -> {
+                orderService.makeStopAndProfitOrder(order, atr);
+                orderCachePort.removeEntryAtr(execution.getOrderId());
+            },
+            () -> {
+                log.error("Entry ATR is missing for filled order; recalculating protection levels: orderId={}",
+                    execution.getOrderId());
+                orderService.makeStopAndProfitOrder(order);
+            }
+        );
     }
 
     /**

@@ -24,6 +24,9 @@ public class TradeConfigParameterApplicationService {
             .availableBalanceRate(tradeConfigParameterService.getAvailableBalanceRate().doubleValue())
             .leverage(tradeConfigParameterService.getLeverage().doubleValue())
             .apiCost(tradeConfigParameterService.getApiCost().doubleValue())
+            .riskPerTradeRate(tradeConfigParameterService.getRiskPerTradeRate().doubleValue())
+            .maxOrderQuantity(tradeConfigParameterService.getMaxOrderQuantity())
+            .maxSpread(tradeConfigParameterService.getMaxSpread().doubleValue())
             .stopLimit(tradeConfigParameterService.getStopLimit().doubleValue())
             .profitLimit(tradeConfigParameterService.getProfitLimit().doubleValue())
             .atrPeriod(tradeConfigParameterService.getAtrPeriod())
@@ -67,6 +70,15 @@ public class TradeConfigParameterApplicationService {
         }
         if (!tradeConfigParameterService.updateApiCost(command.getApiCost())) {
             log.warn("Failed to update API cost");
+        }
+        if (!tradeConfigParameterService.updateRiskPerTradeRate(command.getRiskPerTradeRate())) {
+            log.warn("Failed to update risk per trade rate");
+        }
+        if (!tradeConfigParameterService.updateMaxOrderQuantity(command.getMaxOrderQuantity())) {
+            log.warn("Failed to update maximum order quantity");
+        }
+        if (!tradeConfigParameterService.updateMaxSpread(command.getMaxSpread())) {
+            log.warn("Failed to update maximum spread");
         }
         if (!tradeConfigParameterService.updateStopLimit(command.getStopLimit())) {
             log.warn("Failed to update stop limit");

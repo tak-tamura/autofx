@@ -89,6 +89,30 @@ public class TradeConfigParameterService {
         return configParameterService.updateConfigParameter("TRADE.API_COST", String.valueOf(apiCost));
     }
 
+    public BigDecimal getRiskPerTradeRate() {
+        return BigDecimal.valueOf(configParameterService.getDouble("TRADE.RISK_PER_TRADE_RATE", 0.01));
+    }
+
+    public boolean updateRiskPerTradeRate(double rate) {
+        return configParameterService.updateConfigParameter("TRADE.RISK_PER_TRADE_RATE", String.valueOf(rate));
+    }
+
+    public int getMaxOrderQuantity() {
+        return configParameterService.getInt("TRADE.MAX_ORDER_QUANTITY", 500000);
+    }
+
+    public boolean updateMaxOrderQuantity(int quantity) {
+        return configParameterService.updateConfigParameter("TRADE.MAX_ORDER_QUANTITY", String.valueOf(quantity));
+    }
+
+    public BigDecimal getMaxSpread() {
+        return BigDecimal.valueOf(configParameterService.getDouble("TRADE.MAX_SPREAD", 0.1));
+    }
+
+    public boolean updateMaxSpread(double spread) {
+        return configParameterService.updateConfigParameter("TRADE.MAX_SPREAD", String.valueOf(spread));
+    }
+
     public BigDecimal getStopLimit() {
         final Double stopLimit = configParameterService.getDouble("TRADE.STOP_LIMIT", 0.08);
         return BigDecimal.valueOf(stopLimit);

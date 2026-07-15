@@ -92,6 +92,9 @@ export const TradeSetting: FC = () => {
         availableBalanceRate: tradeConfig.availableBalanceRate,
         leverage: tradeConfig.leverage,
         apiCost: tradeConfig.apiCost,
+        riskPerTradeRate: tradeConfig.riskPerTradeRate,
+        maxOrderQuantity: tradeConfig.maxOrderQuantity,
+        maxSpread: tradeConfig.maxSpread,
         stopLimit: tradeConfig.stopLimit,
         profitLimit: tradeConfig.profitLimit,
         atrPeriod: tradeConfig.atrPeriod,
@@ -245,6 +248,45 @@ export const TradeSetting: FC = () => {
               isInvalid={!!errors.apiCost}
               error={errors.apiCost?.message}
               placeholder="0.002"
+            />
+
+            <RHFNumberInput
+              name="riskPerTradeRate"
+              control={control}
+              label="1取引の許容損失率"
+              min={0.001}
+              max={0.1}
+              step={0.001}
+              precision={3}
+              isInvalid={!!errors.riskPerTradeRate}
+              error={errors.riskPerTradeRate?.message}
+              placeholder="0.01"
+            />
+
+            <RHFNumberInput
+              name="maxOrderQuantity"
+              control={control}
+              label="最大注文数量"
+              min={10000}
+              max={500000}
+              step={1}
+              precision={0}
+              isInvalid={!!errors.maxOrderQuantity}
+              error={errors.maxOrderQuantity?.message}
+              placeholder="500000"
+            />
+
+            <RHFNumberInput
+              name="maxSpread"
+              control={control}
+              label="許容最大スプレッド"
+              min={0.001}
+              max={1}
+              step={0.001}
+              precision={3}
+              isInvalid={!!errors.maxSpread}
+              error={errors.maxSpread?.message}
+              placeholder="0.1"
             />
 
             {/* Stop Limit */}

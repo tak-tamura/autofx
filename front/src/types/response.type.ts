@@ -78,6 +78,9 @@ export type TradeConfigResponse = {
     availableBalanceRate: number;
     leverage: number;
     apiCost: number;
+    riskPerTradeRate: number;
+    maxOrderQuantity: number;
+    maxSpread: number;
     stopLimit: number;
     profitLimit: number;
     atrPeriod: number;

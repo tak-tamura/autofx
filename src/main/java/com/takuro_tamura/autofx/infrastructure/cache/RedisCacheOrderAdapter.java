@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.math.BigDecimal;
 
 @Component
 @RequiredArgsConstructor
@@ -31,5 +32,20 @@ public class RedisCacheOrderAdapter implements OrderCachePort {
         redisCacheService.delete(
             CacheKey.CLOSE_ORDER_ID.build(closeOrderId.toString())
         );
+    }
+
+    @Override
+    public void saveEntryAtr(Long orderId, BigDecimal atr) {
+        redisCacheService.save(CacheKey.ENTRY_ORDER_ATR.build(orderId.toString()), atr);
+    }
+
+    @Override
+    public Optional<BigDecimal> getEntryAtr(Long orderId) {
+        return redisCacheService.get(CacheKey.ENTRY_ORDER_ATR.build(orderId.toString()));
+    }
+
+    @Override
+    public void removeEntryAtr(Long orderId) {
+        redisCacheService.delete(CacheKey.ENTRY_ORDER_ATR.build(orderId.toString()));
     }
 }

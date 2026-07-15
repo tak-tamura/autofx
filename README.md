@@ -95,7 +95,10 @@ POST /api/v1/trade/config
 | `TRADE.SELL_POINT_THRESHOLD` | 売りシグナルの閾値 |
 | `TRADE.AVAILABLE_BALANCE_RATE` | 注文数量計算に使用する資産割合 |
 | `TRADE.LEVERAGE` | 注文数量計算に使用するレバレッジ |
-| `TRADE.API_COST` | 注文数量計算時に1通貨あたりの価格へ加算する値 |
+| `TRADE.API_COST` | 旧数量計算との互換用設定。リスク基準の数量計算では使用しない |
+| `TRADE.RISK_PER_TRADE_RATE` | 口座資産に対する1取引の最大許容損失率 |
+| `TRADE.MAX_ORDER_QUANTITY` | 1回の新規注文の数量上限 |
+| `TRADE.MAX_SPREAD` | 新規注文を許可する最大スプレッド |
 | `TRADE.STOP_LIMIT` | ストップ価格計算に使用するATR倍率 |
 | `TRADE.PROFIT_LIMIT` | 利益確定価格計算に使用するATR倍率 |
 | `TRADE.ATR_PERIOD` | ATR期間 |

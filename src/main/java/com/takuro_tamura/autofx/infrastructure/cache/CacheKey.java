@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum CacheKey {
     CLOSE_ORDER_ID("closeOrderId.%s"),
+    ENTRY_ORDER_ATR("entryOrderAtr.%s"),
     WS_AUTH_TOKEN("wsAuthToken"),
     TRADE_ENABLED("tradeEnabled"),
     ;

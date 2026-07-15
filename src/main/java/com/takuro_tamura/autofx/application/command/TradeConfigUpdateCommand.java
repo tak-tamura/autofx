@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Data;
 
 @Data
@@ -31,6 +33,16 @@ public class TradeConfigUpdateCommand {
 
     @Min(0)
     private double apiCost;
+
+    @DecimalMin(value = "0.0", inclusive = false)
+    @DecimalMax("0.1")
+    private double riskPerTradeRate;
+
+    @Min(10000)
+    private int maxOrderQuantity;
+
+    @DecimalMin(value = "0.0", inclusive = false)
+    private double maxSpread;
 
     @Min(0)
     private double stopLimit;

@@ -7,6 +7,7 @@ import com.takuro_tamura.autofx.application.state.TradeScheduler;
 import com.takuro_tamura.autofx.presentation.controller.request.ScheduleRequest;
 import com.takuro_tamura.autofx.presentation.controller.response.TradeConfigResponse;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,7 +50,7 @@ public class TradeController {
     }
 
     @PostMapping("/config")
-    public TradeConfigResponse updateTradeConfig(@RequestBody TradeConfigUpdateCommand command) {
+    public TradeConfigResponse updateTradeConfig(@Valid @RequestBody TradeConfigUpdateCommand command) {
         tradeConfigParameterApplicationService.updateTradeConfig(command);
         return tradeConfigParameterApplicationService.getTradeConfig();
     }

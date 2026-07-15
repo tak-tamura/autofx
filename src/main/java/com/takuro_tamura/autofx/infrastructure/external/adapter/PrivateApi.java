@@ -46,6 +46,22 @@ public class PrivateApi {
     }
 
     @Retryable(retryFor = {ApiLimitExceedException.class})
+    public OpenPositions getOpenPositions(com.takuro_tamura.autofx.domain.model.value.CurrencyPair symbol) {
+        final MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
+        queryParams.add("symbol", symbol.name());
+        queryParams.add("count", "100");
+        final OpenPositions positions = get(
+            properties.path.openPositions,
+            new ParameterizedTypeReference<>() {},
+            queryParams
+        );
+        if (positions == null || positions.getList() == null) {
+            throw new ApiErrorException("Open positions API returned empty response");
+        }
+        return positions;
+    }
+
+    @Retryable(retryFor = {ApiLimitExceedException.class})
     public OrderResponse order(OrderRequest request) {
         final List<OrderResponse> response = post(properties.path.order, new ParameterizedTypeReference<>() {}, request);
         if (response.isEmpty()) {
@@ -92,7 +108,10 @@ public class PrivateApi {
                     .body(typeReference);
             } else {
                 response = restClient.get()
-                    .uri(uriBuilder -> uriBuilder.host(properties.host).path(path).queryParams(queryParams).build())
+                    .uri(org.springframework.web.util.UriComponentsBuilder.fromUriString(properties.host + path)
+                        .queryParams(queryParams)
+                        .build()
+                        .toUri())
                     .headers(headers -> headers.addAll(headerMap))
                     .retrieve()
                     .body(typeReference);
@@ -218,6 +237,7 @@ public class PrivateApi {
             private String closeOrder;
             private String cancelBulkOrder;
             private String executions;
+            private String openPositions;
             private String wsAuth;
         }
     }

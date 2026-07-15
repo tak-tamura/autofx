@@ -1,6 +1,7 @@
 package com.takuro_tamura.autofx.domain.service.port;
 
 import java.util.Optional;
+import java.math.BigDecimal;
 
 /**
  * ビジネスロジック層が決済注文ID のマッピング保存に期待するインターフェース（ポート）
@@ -26,4 +27,10 @@ public interface OrderCachePort {
      * @param closeOrderId 決済注文ID
      */
     void removeMapping(Long closeOrderId);
+
+    void saveEntryAtr(Long orderId, BigDecimal atr);
+
+    Optional<BigDecimal> getEntryAtr(Long orderId);
+
+    void removeEntryAtr(Long orderId);
 }

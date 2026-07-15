@@ -12,7 +12,7 @@ private-api:
     close-order: /v1/closeOrder
     close-bulk-order: /v1/cancelBulkOrder
     executions: /v1/executions
+    open-positions: /v1/openPositions
     ws-auth: /v1/ws-auth
 websocket-api:
   base-url: wss://forex-api.coin.z.com/ws/private/v1/
-

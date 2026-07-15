@@ -23,12 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
+import com.takuro_tamura.autofx.domain.service.indicator.AtrCalculator;
+import com.takuro_tamura.autofx.infrastructure.external.exception.ApiErrorException;
+import com.takuro_tamura.autofx.domain.service.port.OrderCachePort;
 
 @Service
 @RequiredArgsConstructor
 public class TradeApplicationService {
-    private final static int MINIMUM_ORDER_QUANTITY = 10000;
-
     private final Logger log = LoggerFactory.getLogger(TradeApplicationService.class);
     private final CandleService candleService;
     private final OrderService orderService;
@@ -38,6 +40,7 @@ public class TradeApplicationService {
     private final OrderAmountCalculationService orderAmountCalculationService;
     private final TradeStatePortal tradeStatePortal;
     private final TradeSignalValidator tradeSignalValidator;
+    private final OrderCachePort orderCachePort;
 
     @Transactional
     public void trade() {
@@ -77,29 +80,38 @@ public class TradeApplicationService {
 
         if (signal == TradeSignal.BUY) {
             if (!tradeSignalValidator.hasOpenPosition(lastOrder.orElse(null))) {
-                makeOrder(OrderSide.BUY, targetPair);
+                makeOrder(OrderSide.BUY, targetPair, candles);
             } else if (tradeSignalValidator.isOppositeSignal(signal, lastOrder.orElse(null))) {
                 lastOrder.ifPresent(orderService::closeOrder);
+            } else {
+                log.info("BUY signal received, but holding current position, no action taken");
             }
         } else if (signal == TradeSignal.SELL) {
             if (!tradeSignalValidator.hasOpenPosition(lastOrder.orElse(null))) {
-                makeOrder(OrderSide.SELL, targetPair);
+                makeOrder(OrderSide.SELL, targetPair, candles);
             } else if (tradeSignalValidator.isOppositeSignal(signal, lastOrder.orElse(null))) {
                 lastOrder.ifPresent(orderService::closeOrder);
+            } else {
+                log.info("SELL signal received, but holding current position, no action taken");
             }
         } else {
             log.info("Skip trading this time because of no trading signal");
         }
     }
 
-    private void makeOrder(OrderSide type, CurrencyPair targetPair) {
-        final int orderAmount = orderAmountCalculationService.calculateOrderAmount(type, targetPair);
-
-        if (orderAmount < MINIMUM_ORDER_QUANTITY) {
-            log.warn("Not enough available amount, cannot make new order");
+    private void makeOrder(OrderSide type, CurrencyPair targetPair, List<Candle> candles) {
+        final int atrPeriod = tradeConfigParameterService.getAtrPeriod();
+        if (candles.size() <= atrPeriod) {
+            log.warn("Not enough completed candles to calculate ATR, required={}, actual={}", atrPeriod + 1, candles.size());
             return;
         }
-
-        orderService.makeOrder(targetPair, type, orderAmount);
+        try {
+            final BigDecimal atr = AtrCalculator.calculate(candles, candles.size() - 1, atrPeriod);
+            final int orderAmount = orderAmountCalculationService.calculateOrderAmount(type, targetPair, atr);
+            final Long orderId = orderService.makeOrder(targetPair, type, orderAmount);
+            orderCachePort.saveEntryAtr(orderId, atr);
+        } catch (IllegalStateException | ApiErrorException e) {
+            log.warn("Risk validation rejected new order: symbol={}, side={}, reason={}", targetPair, type, e.getMessage());
+        }
     }
 }

@@ -73,10 +73,11 @@ public class OrderService {
      * @param type
      * @param size
      */
-    public void makeOrder(CurrencyPair currencyPair, OrderSide type, int size) {
+    public Long makeOrder(CurrencyPair currencyPair, OrderSide type, int size) {
         log.info("Sending new order request: currencyPair={}, side={}, size={}", currencyPair, type, size);
-        orderPlacementPort.submitMarketOrder(currencyPair, type, size);
+        final Long orderId = orderPlacementPort.submitMarketOrder(currencyPair, type, size);
         log.info("Sent order request successfully");
+        return orderId;
     }
 
     /**
@@ -95,7 +96,10 @@ public class OrderService {
     }
 
     public void makeStopAndProfitOrder(Order order) {
-        final BigDecimal atr = calculateLatestAtr();
+        makeStopAndProfitOrder(order, calculateLatestAtr());
+    }
+
+    public void makeStopAndProfitOrder(Order order, BigDecimal atr) {
         log.info("Calculated ATR: {}", atr.doubleValue());
 
         final ProtectionLevels protectionLevels = createProtectionLevels(
