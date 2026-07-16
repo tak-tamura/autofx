@@ -17,6 +17,7 @@ import { PriceChart } from "../organisms/PriceChart";
 import { RsiChart } from "../organisms/RsiChart";
 import { MacdChart } from "../organisms/MacdChart";
 import { AdxPanelChart } from "../organisms/AdxChart";
+import { DEFAULT_BBANDS_K, DEFAULT_BBANDS_N } from "../../config/chartDefaults";
 
 export const Charts: FC = () => {
   const { 
@@ -47,8 +48,8 @@ export const Charts: FC = () => {
 
   /* BBandsのパラメータ */
   const [enableBBands, setEnableBBands] = useState(false);
-  const [bbandsN, setBbandsN] = useState(2);
-  const [bbandsK, setBbandsK] = useState(20);
+  const [bbandsN, setBbandsN] = useState(DEFAULT_BBANDS_N);
+  const [bbandsK, setBbandsK] = useState(DEFAULT_BBANDS_K);
 
   /* Ichimokuのパラメータ */
   const [enableIchimoku, setEnableIchimoku] = useState(false);
