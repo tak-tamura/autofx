@@ -12,6 +12,7 @@ import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.domain.service.port.OrderCachePort;
 import com.takuro_tamura.autofx.domain.service.port.OrderPlacementPort;
+import com.takuro_tamura.autofx.domain.strategy.PreparedStrategy;
 import com.takuro_tamura.autofx.domain.strategy.Strategy;
 import org.junit.jupiter.api.Test;
 
@@ -58,8 +59,10 @@ class BackTestServiceTest {
             new BacktestExecutionPolicy()
         );
         final Strategy strategy = mock(Strategy.class);
-        when(strategy.checkTradeSignal(eq(candles), anyInt())).thenReturn(TradeSignal.NONE);
-        when(strategy.checkTradeSignal(candles, 2)).thenReturn(TradeSignal.BUY);
+        final PreparedStrategy preparedStrategy = mock(PreparedStrategy.class);
+        when(strategy.prepare(candles)).thenReturn(preparedStrategy);
+        when(preparedStrategy.checkTradeSignal(anyInt())).thenReturn(TradeSignal.NONE);
+        when(preparedStrategy.checkTradeSignal(2)).thenReturn(TradeSignal.BUY);
 
         final var result = backTestService.run(
             CurrencyPair.USD_JPY,
@@ -88,6 +91,7 @@ class BackTestServiceTest {
         verify(config, times(1)).getAtrPeriod();
         verify(config, times(1)).getStopLimit();
         verify(config, times(1)).getProfitLimit();
+        verify(strategy, times(1)).prepare(candles);
     }
 
     @Test
@@ -115,9 +119,11 @@ class BackTestServiceTest {
             mock(CandleService.class), orderService, candleRepository, config, new BacktestExecutionPolicy()
         );
         final Strategy strategy = mock(Strategy.class);
-        when(strategy.checkTradeSignal(eq(candles), anyInt())).thenReturn(TradeSignal.NONE);
-        when(strategy.checkTradeSignal(candles, 2)).thenReturn(TradeSignal.BUY);
-        when(strategy.checkTradeSignal(candles, 4)).thenReturn(TradeSignal.SELL);
+        final PreparedStrategy preparedStrategy = mock(PreparedStrategy.class);
+        when(strategy.prepare(candles)).thenReturn(preparedStrategy);
+        when(preparedStrategy.checkTradeSignal(anyInt())).thenReturn(TradeSignal.NONE);
+        when(preparedStrategy.checkTradeSignal(2)).thenReturn(TradeSignal.BUY);
+        when(preparedStrategy.checkTradeSignal(4)).thenReturn(TradeSignal.SELL);
 
         final var result = backTestService.run(CurrencyPair.USD_JPY, TimeFrame.HOUR, 7, strategy);
 

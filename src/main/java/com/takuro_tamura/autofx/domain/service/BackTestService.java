@@ -15,6 +15,7 @@ import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import com.takuro_tamura.autofx.domain.model.value.TradeSignal;
 import com.takuro_tamura.autofx.domain.service.config.TradeConfigParameterService;
 import com.takuro_tamura.autofx.domain.service.indicator.AtrCalculator;
+import com.takuro_tamura.autofx.domain.strategy.PreparedStrategy;
 import com.takuro_tamura.autofx.domain.strategy.Strategy;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -58,6 +59,8 @@ public class BackTestService {
         );
 
         final List<BacktestTrade> trades = new ArrayList<>();
+        // 全足で共有するインジケーターをループ前に一度だけ計算する。
+        final PreparedStrategy preparedStrategy = strategy.prepare(candles);
         // 確定足で検出したシグナルを次足始値まで持ち越し、判定足終値での先回り約定を防ぐ。
         PendingAction pendingAction = null;
 
@@ -118,7 +121,7 @@ public class BackTestService {
 
             if (i < candles.size() - 1) {
                 // 次足が存在しない最終足のシグナルは、約定不能なので評価対象にしない。
-                final TradeSignal signal = strategy.checkTradeSignal(candles, i);
+                final TradeSignal signal = preparedStrategy.checkTradeSignal(i);
                 pendingAction = createPendingAction(signal, trades, candle, candles, i, riskParameters);
             }
         }

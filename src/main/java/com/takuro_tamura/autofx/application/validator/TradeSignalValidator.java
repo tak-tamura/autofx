@@ -50,7 +50,8 @@ public class TradeSignalValidator {
      */
     public TradeSignal generateSignal(List<Candle> candles) {
         return strategyFactory.createEmaCrossStrategy()
-            .checkTradeSignal(candles, candles.size() - 2);
+            .prepare(candles)
+            .checkTradeSignal(candles.size() - 2);
     }
 
     /**

@@ -22,20 +22,12 @@ public class EmaCrossStrategy implements Strategy {
     private final StrategyConfig config;
 
     @Override
-    public TradeSignal checkTradeSignal(List<Candle> candles, int index) {
+    public PreparedStrategy prepare(List<Candle> candles) {
         final double[] adxValues = AdxCalculator.calculateAdx(
             candles,
             config.adxPeriod()
         );
-
-        final var adxFilter = new AdxEntryFilter(config.adxThreshold());
-        if (!adxFilter.canEnter(adxValues, index)) {
-            log.info("ADX filter not passed: ADX={}", adxValues[index]);
-            return TradeSignal.NONE;
-        }
-
         final double[] closePrices = candleService.extractClosePrices(candles);
-
         final int[] emaPeriods = new int[]{
             config.emaPeriod1(),
             config.emaPeriod2()
@@ -57,15 +49,49 @@ public class EmaCrossStrategy implements Strategy {
             closePrices
         );
 
-        if (checkBuySignal(ema, bBands, rsi, macd, closePrices, index)) {
-            return TradeSignal.BUY;
-        } else if (checkSellSignal(ema, bBands, rsi, macd, closePrices, index)) {
-            return TradeSignal.SELL;
-        }
-        return TradeSignal.NONE;
+        return new PreparedEmaCrossStrategy(
+            candles.size(),
+            closePrices,
+            adxValues,
+            new AdxEntryFilter(config.adxThreshold()),
+            ema,
+            bBands,
+            rsi,
+            macd
+        );
     }
 
-    private boolean checkBuySignal(Ema ema, BBands bBands, Rsi rsi, Macd macd, double[] closePrices, int index) {
+    @RequiredArgsConstructor
+    private static class PreparedEmaCrossStrategy implements PreparedStrategy {
+        private final int candleCount;
+        private final double[] closePrices;
+        private final double[] adxValues;
+        private final AdxEntryFilter adxFilter;
+        private final Ema ema;
+        private final BBands bBands;
+        private final Rsi rsi;
+        private final Macd macd;
+
+        @Override
+        public TradeSignal checkTradeSignal(int index) {
+            if (index < 0 || index >= candleCount) {
+                throw new IllegalArgumentException("index is outside prepared candles: " + index);
+            }
+            if (!adxFilter.canEnter(adxValues, index)) {
+                log.info("ADX filter not passed: ADX={}", adxValues[index]);
+                return TradeSignal.NONE;
+            }
+
+            if (checkBuySignal(ema, bBands, rsi, macd, closePrices, index)) {
+                return TradeSignal.BUY;
+            } else if (checkSellSignal(ema, bBands, rsi, macd, closePrices, index)) {
+                return TradeSignal.SELL;
+            }
+            return TradeSignal.NONE;
+        }
+    }
+
+    private static boolean checkBuySignal(Ema ema, BBands bBands, Rsi rsi, Macd macd, double[] closePrices, int index) {
         if (!ema.shouldBuy(index)) {
             return false;
         }
@@ -92,7 +118,7 @@ public class EmaCrossStrategy implements Strategy {
         }
     }
 
-    private boolean checkSellSignal(Ema ema, BBands bBands, Rsi rsi, Macd macd, double[] closePrices, int index) {
+    private static boolean checkSellSignal(Ema ema, BBands bBands, Rsi rsi, Macd macd, double[] closePrices, int index) {
         if (!ema.shouldSell(index)) {
             return false;
         }
