@@ -6,10 +6,9 @@ import com.takuro_tamura.autofx.application.strategy.StrategyFactory;
 import com.takuro_tamura.autofx.domain.indicator.*;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
-import com.takuro_tamura.autofx.domain.model.entity.Order;
+import com.takuro_tamura.autofx.domain.backtest.BacktestResult;
 import com.takuro_tamura.autofx.domain.service.BackTestService;
 import com.takuro_tamura.autofx.domain.service.CandleService;
-import com.takuro_tamura.autofx.domain.service.OrderService;
 import com.takuro_tamura.autofx.domain.service.indicator.AdxCalculator;
 import com.takuro_tamura.autofx.domain.strategy.Strategy;
 import com.takuro_tamura.autofx.presentation.controller.response.CandleDto;
@@ -38,7 +37,6 @@ public class BacktestChartApplicationService {
     private final BackTestService backTestService;
     private final CandleService candleService;
     private final CandleRepository candleRepository;
-    private final OrderService orderService;
     private final IndicatorRecordFactory indicatorRecordFactory;
     private final OrderRecordFactory orderRecordFactory;
     private final StrategyFactory strategyFactory;
@@ -65,17 +63,18 @@ public class BacktestChartApplicationService {
             final Strategy strategy = strategyFactory.createEmaCrossStrategy(command);
             
             // バックテスト結果のオーダーを実行
-            final List<Order> orders = backTestService.backTest(
+            final BacktestResult result = backTestService.run(
                 command.getCurrencyPair(),
                 command.getTimeFrame(),
                 command.getLimit(),
                 strategy
             );
 
-            builder.orders(orders.stream()
-                .map(order -> orderRecordFactory.createOrderRecord(order, command.getTimeFrame()))
+            builder.orders(result.trades().stream()
+                .map(trade -> orderRecordFactory.createOrderRecord(trade, command.getTimeFrame()))
                 .collect(Collectors.toList()));
-            builder.profit(orderService.accumulateProfit(orders).doubleValue());
+            builder.profit(result.totalProfit().doubleValue());
+            builder.backtestAssumptions(result.assumptions());
         }
 
         return builder.build();

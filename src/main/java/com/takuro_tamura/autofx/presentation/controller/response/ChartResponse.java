@@ -1,6 +1,7 @@
 package com.takuro_tamura.autofx.presentation.controller.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.takuro_tamura.autofx.domain.backtest.BacktestAssumptions;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class ChartResponse {
     private final Indicator indicator;
     private final List<OrderRecord> orders;
     private final Double profit;
+    private final BacktestAssumptions backtestAssumptions;
 
     @Builder
     public ChartResponse(
@@ -28,12 +30,14 @@ public class ChartResponse {
         MacdRecord macd,
         List<Double> adx,
         List<OrderRecord> orders,
-        Double profit
+        Double profit,
+        BacktestAssumptions backtestAssumptions
     ) {
         this.currencyPair = currencyPair;
         this.candles = candles;
         this.orders = orders;
         this.profit = profit;
+        this.backtestAssumptions = backtestAssumptions;
         this.indicator = Indicator.builder()
             .smas(smas)
             .emas(emas)

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.OrderStatus;
 import com.takuro_tamura.autofx.domain.model.value.OrderSide;
+import com.takuro_tamura.autofx.domain.backtest.BacktestExitReason;
 
 import java.time.LocalDateTime;
 
@@ -16,10 +17,16 @@ public record OrderRecord(
     int quantity,
     OrderStatus status,
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "Asia/Tokyo")
+    LocalDateTime signalDatetime,
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "Asia/Tokyo")
     LocalDateTime fillDatetime,
     Double fillPrice,
+    Double entryAtr,
+    Double stopPrice,
+    Double takeProfitPrice,
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "Asia/Tokyo")
     LocalDateTime closeDatetime,
-    Double closePrice
+    Double closePrice,
+    BacktestExitReason exitReason
 ) {
 }

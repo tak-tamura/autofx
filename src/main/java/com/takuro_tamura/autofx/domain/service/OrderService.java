@@ -146,8 +146,12 @@ public class OrderService {
     }
 
     public Order createBackTestOrder(OrderSide side, Candle candle) {
-        final Order order = createDummyOrder(candle, side, candle.getClose());
-        log.debug("Create new order at {}, side: {}, price: {}", candle.getTime(), side, candle.getClose());
+        return createBackTestOrder(side, candle, candle.getClose());
+    }
+
+    public Order createBackTestOrder(OrderSide side, Candle candle, Price fillPrice) {
+        final Order order = createDummyOrder(candle, side, fillPrice);
+        log.debug("Create new order at {}, side: {}, price: {}", candle.getTime(), side, fillPrice);
         return order;
     }
 

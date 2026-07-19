@@ -7,6 +7,17 @@ export type ChartApiResponse = {
     indicator: Indicator;
     orders?: Array<Order>;
     profit: number;
+    backtestAssumptions?: BacktestAssumptions;
+};
+
+export type BacktestAssumptions = {
+    entryTiming: "NEXT_CANDLE_OPEN";
+    intrabarExitModel: "OHLC_HIGH_LOW";
+    bothTouchedPolicy: "STOP_FIRST";
+    finalPositionPolicy: "CLOSE_AT_FINAL_CLOSE";
+    spread: number;
+    slippage: number;
+    commission: number;
 };
 
 export type Indicator = {
@@ -61,10 +72,15 @@ export type Order = {
     quantity: number;
     orderPrice: number;
     status: "WAITING" |  "FILLED" | "CLOSED" | "CANCELED";
+    signalDatetime?: string;
     fillDatetime: string;
     fillPrice: number;
+    entryAtr?: number;
+    stopPrice?: number;
+    takeProfitPrice?: number;
     closeDatetime?: string;
     closePrice?: number;
+    exitReason?: "STOP_LOSS" | "TAKE_PROFIT" | "BOTH_TOUCHED_STOP_FIRST" | "OPPOSITE_SIGNAL" | "END_OF_DATA";
     //notes?: string;
 };
 
