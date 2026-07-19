@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -54,6 +55,13 @@ public class WebSocketApiClient {
     }
 
     public void reconnect() {
+        if (session != null && session.isOpen()) {
+            try {
+                session.close();
+            } catch (IOException e) {
+                log.error("Failed to close WebSocket session", e);
+            }
+        }
         if (reconnecting.compareAndSet(false, true)) {
             log.warn("WebSocket disconnected. Attempting to reconnect...");
             connectWithRetry();
@@ -72,6 +80,7 @@ public class WebSocketApiClient {
                     reconnecting.set(false);
                     break;
                 } catch (Exception e) {
+                    // TODO メンテナンス時はsleep時間を長くする
                     retryCount++;
                     log.error("WebSocket connection failed (attempt {}): {}", retryCount, e.getMessage());
                     try {
