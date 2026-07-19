@@ -131,23 +131,6 @@ class OrderServiceTest {
         assertThat(orderService.hasOpenPosition(order)).isFalse();
     }
 
-    @Test
-    void createsAndClosesBackTestOrderWithoutManagingOrderHistory() {
-        final Candle entryCandle = candle(0, "100.0", "100.1", "99.9");
-        final Order order = orderService.createBackTestOrder(OrderSide.BUY, entryCandle);
-
-        assertThat(orderService.hasOpenPosition(order)).isTrue();
-
-        orderService.closeBackTestOrderIfOpposite(
-            OrderSide.SELL,
-            order,
-            candle(1, "101.0", "101.1", "100.9")
-        );
-
-        assertThat(orderService.hasOpenPosition(order)).isFalse();
-        assertThat(order.getClosePrice().getValue()).isEqualByComparingTo("101.0");
-    }
-
     private Candle candle(int hour, String close, String high, String low) {
         return Candle.builder()
             .time(LocalDateTime.of(2026, 1, 1, hour, 0))

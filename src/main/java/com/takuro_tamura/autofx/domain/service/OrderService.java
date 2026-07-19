@@ -135,36 +135,10 @@ public class OrderService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public Order handleBackTestOrder(OrderSide side, List<Order> orders, Order lastOrder, Candle candle) {
-        if (hasOpenPosition(lastOrder)) {
-            closeBackTestOrderIfOpposite(side, lastOrder, candle);
-            return null;
-        }
-        final Order order = createBackTestOrder(side, candle);
-        orders.add(order);
-        return order;
-    }
-
-    public Order createBackTestOrder(OrderSide side, Candle candle) {
-        return createBackTestOrder(side, candle, candle.getClose());
-    }
-
     public Order createBackTestOrder(OrderSide side, Candle candle, Price fillPrice) {
         final Order order = createDummyOrder(candle, side, fillPrice);
         log.debug("Create new order at {}, side: {}, price: {}", candle.getTime(), side, fillPrice);
         return order;
-    }
-
-    void closeBackTestOrderIfOpposite(OrderSide signalSide, Order openOrder, Candle candle) {
-        if (openOrder.getSide() != signalSide) {
-            openOrder.close(candle.getTime(), candle.getClose());
-            log.debug("Close order at {}, side: {}, price: {}, profit: {}",
-                candle.getTime(),
-                openOrder.getSide(),
-                candle.getClose(),
-                openOrder.calculateProfit()
-            );
-        }
     }
 
     public Order createDummyOrder(Candle candle, OrderSide type, Price price) {
