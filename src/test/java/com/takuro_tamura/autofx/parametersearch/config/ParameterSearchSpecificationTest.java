@@ -24,7 +24,7 @@ class ParameterSearchSpecificationTest {
         assertThat(specification.marketData().timeZone()).isEqualTo(ZoneId.of("Asia/Tokyo"));
         assertThat(specification.marketData().excludeIncompleteCandle()).isTrue();
 
-        assertThat(specification.periods().datasetFrom()).isEqualTo(LocalDate.of(2023, 1, 1));
+        assertThat(specification.periods().datasetFrom()).isEqualTo(LocalDate.of(2023, 10, 28));
         assertThat(specification.periods().datasetTo()).isEqualTo(LocalDate.of(2025, 12, 31));
         assertThat(specification.periods().inSampleTo()).isEqualTo(LocalDate.of(2024, 12, 31));
         assertThat(specification.periods().outOfSampleFrom()).isEqualTo(LocalDate.of(2025, 1, 1));

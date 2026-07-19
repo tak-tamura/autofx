@@ -1,0 +1,4 @@
+root = true
+
+[src/test/resources/parameter-search.properties]
+charset = utf-8
