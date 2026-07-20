@@ -7,9 +7,10 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public enum ApiErrorCode {
     ERR_143("ERR-143", "Restricted"),
+    ERR_423("ERR-423", "Order size exceeds position size"),
     ERR_5003("ERR-5003", "Exceeds rate limit"),
     ERR_5106("ERR-5106", "Invalid parameter"),
-    ERR_5201("ERR-5202", "Under maintenance"),
+    ERR_5201("ERR-5201", "Under maintenance"),
     ;
 
     private final String code;
