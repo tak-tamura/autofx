@@ -8,6 +8,7 @@ import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 import com.takuro_tamura.autofx.infrastructure.external.response.Kline;
 import com.takuro_tamura.autofx.parametersearch.config.MarketPriceType;
 import com.takuro_tamura.autofx.parametersearch.config.ParameterSearchSpecification;
+import com.takuro_tamura.autofx.parametersearch.config.ParameterSearchSpecificationLoader;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,7 +37,9 @@ final class DatasetTestFixtures {
                 LocalDate.of(2025, 1, 2),
                 LocalDate.of(2025, 1, 2)
             ),
-            BacktestAssumptions.current()
+            BacktestAssumptions.current(),
+            // データセット用fixtureでも、本番の探索設定と同じ検証済み候補空間を使用する。
+            ParameterSearchSpecificationLoader.load("parameter-search.properties").strategySearchSpace()
         );
     }
 

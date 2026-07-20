@@ -14,10 +14,11 @@ import java.time.ZoneId;
 public record ParameterSearchSpecification(
     MarketDataConditions marketData,
     EvaluationPeriods periods,
-    BacktestAssumptions executionAssumptions
+    BacktestAssumptions executionAssumptions,
+    StrategySearchSpace strategySearchSpace
 ) {
     public ParameterSearchSpecification {
-        if (marketData == null || periods == null || executionAssumptions == null) {
+        if (marketData == null || periods == null || executionAssumptions == null || strategySearchSpace == null) {
             throw new IllegalArgumentException("All parameter-search conditions are required");
         }
     }

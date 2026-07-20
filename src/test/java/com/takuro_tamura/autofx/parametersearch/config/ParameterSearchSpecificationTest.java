@@ -28,6 +28,10 @@ class ParameterSearchSpecificationTest {
         assertThat(specification.periods().datasetTo()).isEqualTo(LocalDate.of(2025, 12, 31));
         assertThat(specification.periods().inSampleTo()).isEqualTo(LocalDate.of(2024, 12, 31));
         assertThat(specification.periods().outOfSampleFrom()).isEqualTo(LocalDate.of(2025, 1, 1));
+
+        assertThat(specification.strategySearchSpace().mode()).isEqualTo(SearchMode.ONE_FACTOR_AT_A_TIME);
+        assertThat(specification.strategySearchSpace().maxCandidates()).isEqualTo(100);
+        assertThat(specification.strategySearchSpace().baseline().toStrategyConfig().emaPeriod1()).isEqualTo(8);
     }
 
     @Test

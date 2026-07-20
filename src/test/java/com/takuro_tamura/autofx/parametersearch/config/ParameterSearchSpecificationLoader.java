@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 public final class ParameterSearchSpecificationLoader {
@@ -55,8 +57,81 @@ public final class ParameterSearchSpecificationLoader {
                 decimal(properties, "execution.spread"),
                 decimal(properties, "execution.slippage"),
                 decimal(properties, "execution.commission")
+            ),
+            new StrategySearchSpace(
+                SearchMode.valueOf(required(properties, "search.mode")),
+                positiveInt(properties, "search.max-candidates"),
+                new StrategyParameterSet(
+                    positiveInt(properties, "search.baseline.ema-short"),
+                    positiveInt(properties, "search.baseline.ema-long"),
+                    positiveInt(properties, "search.baseline.rsi-period"),
+                    positiveInt(properties, "search.baseline.macd-fast"),
+                    positiveInt(properties, "search.baseline.macd-slow"),
+                    positiveInt(properties, "search.baseline.macd-signal"),
+                    positiveInt(properties, "search.baseline.bbands-period"),
+                    positiveDecimal(properties, "search.baseline.bbands-multiplier"),
+                    positiveInt(properties, "search.baseline.adx-period"),
+                    positiveDecimal(properties, "search.baseline.adx-threshold")
+                ),
+                intList(properties, "search.candidates.ema-short"),
+                intList(properties, "search.candidates.ema-long"),
+                intList(properties, "search.candidates.rsi-period"),
+                intList(properties, "search.candidates.macd-fast"),
+                intList(properties, "search.candidates.macd-slow"),
+                intList(properties, "search.candidates.macd-signal"),
+                intList(properties, "search.candidates.bbands-period"),
+                decimalList(properties, "search.candidates.bbands-multiplier"),
+                intList(properties, "search.candidates.adx-period"),
+                decimalList(properties, "search.candidates.adx-threshold")
             )
         );
+    }
+
+    private static int positiveInt(Properties properties, String key) {
+        final int value = Integer.parseInt(required(properties, key));
+        if (value <= 0) {
+            throw new IllegalArgumentException(key + " must be greater than zero");
+        }
+        return value;
+    }
+
+    private static BigDecimal positiveDecimal(Properties properties, String key) {
+        final BigDecimal value = decimal(properties, key);
+        if (value.signum() == 0) {
+            throw new IllegalArgumentException(key + " must be greater than zero");
+        }
+        return value.stripTrailingZeros();
+    }
+
+    private static List<Integer> intList(Properties properties, String key) {
+        return values(properties, key).stream()
+            .map(value -> {
+                final int parsed = Integer.parseInt(value);
+                if (parsed <= 0) {
+                    throw new IllegalArgumentException(key + " values must be greater than zero");
+                }
+                return parsed;
+            })
+            .toList();
+    }
+
+    private static List<BigDecimal> decimalList(Properties properties, String key) {
+        return values(properties, key).stream()
+            .map(value -> {
+                final BigDecimal parsed = new BigDecimal(value);
+                if (parsed.signum() <= 0) {
+                    throw new IllegalArgumentException(key + " values must be greater than zero");
+                }
+                return parsed.stripTrailingZeros();
+            })
+            .toList();
+    }
+
+    private static List<String> values(Properties properties, String key) {
+        return Arrays.stream(required(properties, key).split(","))
+            .map(String::trim)
+            .filter(value -> !value.isEmpty())
+            .toList();
     }
 
     private static LocalDate date(Properties properties, String key) {
