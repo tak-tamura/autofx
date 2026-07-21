@@ -4,6 +4,7 @@ import com.takuro_tamura.autofx.domain.backtest.BacktestAssumptions;
 import com.takuro_tamura.autofx.domain.backtest.BacktestExecutionPolicy;
 import com.takuro_tamura.autofx.domain.backtest.BacktestExitReason;
 import com.takuro_tamura.autofx.domain.backtest.BacktestResult;
+import com.takuro_tamura.autofx.domain.backtest.BacktestRiskParameters;
 import com.takuro_tamura.autofx.domain.backtest.BacktestTrade;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
@@ -57,6 +58,25 @@ public class BackTestService {
             tradeConfigParameterService.getStopLimit(),
             tradeConfigParameterService.getProfitLimit()
         );
+
+        return run(candles, strategy, riskParameters);
+    }
+
+    /**
+     * 呼び出し側が固定したデータとリスク条件でバックテストを実行する。
+     * パラメータ探索ではDBを参照しないこの入口を使い、実行条件の再現性を保つ。
+     */
+    public BacktestResult run(
+        List<Candle> candles,
+        Strategy strategy,
+        BacktestRiskParameters riskParameters
+    ) {
+        if (candles == null || strategy == null || riskParameters == null) {
+            throw new IllegalArgumentException("Candles, strategy, and backtest risk parameters are required");
+        }
+        if (candles.isEmpty()) {
+            return new BacktestResult(Collections.emptyList(), BacktestAssumptions.current());
+        }
 
         final List<BacktestTrade> trades = new ArrayList<>();
         // 全足で共有するインジケーターをループ前に一度だけ計算する。
@@ -207,21 +227,4 @@ public class BackTestService {
     ) {
     }
 
-    private record BacktestRiskParameters(
-        int atrPeriod,
-        BigDecimal stopMultiplier,
-        BigDecimal profitMultiplier
-    ) {
-        private BacktestRiskParameters {
-            if (atrPeriod <= 0) {
-                throw new IllegalArgumentException("ATR period must be greater than zero");
-            }
-            if (stopMultiplier == null || stopMultiplier.signum() <= 0) {
-                throw new IllegalArgumentException("Stop multiplier must be greater than zero");
-            }
-            if (profitMultiplier == null || profitMultiplier.signum() <= 0) {
-                throw new IllegalArgumentException("Profit multiplier must be greater than zero");
-            }
-        }
-    }
 }

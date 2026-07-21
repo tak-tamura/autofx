@@ -1,6 +1,7 @@
 package com.takuro_tamura.autofx.parametersearch.config;
 
 import com.takuro_tamura.autofx.domain.backtest.BacktestAssumptions;
+import com.takuro_tamura.autofx.domain.backtest.BacktestRiskParameters;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 
@@ -15,10 +16,12 @@ public record ParameterSearchSpecification(
     MarketDataConditions marketData,
     EvaluationPeriods periods,
     BacktestAssumptions executionAssumptions,
+    BacktestRiskParameters riskParameters,
     StrategySearchSpace strategySearchSpace
 ) {
     public ParameterSearchSpecification {
-        if (marketData == null || periods == null || executionAssumptions == null || strategySearchSpace == null) {
+        if (marketData == null || periods == null || executionAssumptions == null
+            || riskParameters == null || strategySearchSpace == null) {
             throw new IllegalArgumentException("All parameter-search conditions are required");
         }
     }

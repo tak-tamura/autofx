@@ -2,6 +2,7 @@ package com.takuro_tamura.autofx.domain.service;
 
 import com.takuro_tamura.autofx.domain.backtest.BacktestExecutionPolicy;
 import com.takuro_tamura.autofx.domain.backtest.BacktestExitReason;
+import com.takuro_tamura.autofx.domain.backtest.BacktestRiskParameters;
 import com.takuro_tamura.autofx.domain.model.entity.Candle;
 import com.takuro_tamura.autofx.domain.model.entity.CandleRepository;
 import com.takuro_tamura.autofx.domain.model.entity.Order;
@@ -24,6 +25,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class BackTestServiceTest {
+
+    @Test
+    void runsExplicitDatasetWithoutReadingRepositoryOrDatabaseRiskSettings() {
+        final List<Candle> candles = List.of(
+            candle(0, "100", "101", "99"),
+            candle(1, "100", "101", "99")
+        );
+        final CandleRepository candleRepository = mock(CandleRepository.class);
+        final TradeConfigParameterService config = mock(TradeConfigParameterService.class);
+        final BackTestService backTestService = new BackTestService(
+            mock(CandleService.class),
+            new OrderService(
+                mock(OrderPlacementPort.class), mock(OrderCachePort.class), mock(CandleService.class), config
+            ),
+            candleRepository,
+            config,
+            new BacktestExecutionPolicy()
+        );
+        final Strategy strategy = mock(Strategy.class);
+        final PreparedStrategy preparedStrategy = mock(PreparedStrategy.class);
+        when(strategy.prepare(candles)).thenReturn(preparedStrategy);
+        when(preparedStrategy.checkTradeSignal(anyInt())).thenReturn(TradeSignal.NONE);
+
+        final var result = backTestService.run(
+            candles,
+            strategy,
+            new BacktestRiskParameters(14, new BigDecimal("1.5"), new BigDecimal("3.0"))
+        );
+
+        assertThat(result.trades()).isEmpty();
+        verifyNoInteractions(candleRepository, config);
+        verify(strategy).prepare(candles);
+    }
 
     @Test
     void fillsAtNextCandleOpenAndUsesSignalCandleAtr() {

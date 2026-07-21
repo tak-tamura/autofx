@@ -38,6 +38,7 @@ final class DatasetTestFixtures {
                 LocalDate.of(2025, 1, 2)
             ),
             BacktestAssumptions.current(),
+            ParameterSearchSpecificationLoader.load("parameter-search.properties").riskParameters(),
             // データセット用fixtureでも、本番の探索設定と同じ検証済み候補空間を使用する。
             ParameterSearchSpecificationLoader.load("parameter-search.properties").strategySearchSpace()
         );

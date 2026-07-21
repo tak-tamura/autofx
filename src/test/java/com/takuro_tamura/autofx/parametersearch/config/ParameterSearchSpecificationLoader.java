@@ -1,6 +1,7 @@
 package com.takuro_tamura.autofx.parametersearch.config;
 
 import com.takuro_tamura.autofx.domain.backtest.BacktestAssumptions;
+import com.takuro_tamura.autofx.domain.backtest.BacktestRiskParameters;
 import com.takuro_tamura.autofx.domain.model.value.CurrencyPair;
 import com.takuro_tamura.autofx.domain.model.value.TimeFrame;
 
@@ -57,6 +58,11 @@ public final class ParameterSearchSpecificationLoader {
                 decimal(properties, "execution.spread"),
                 decimal(properties, "execution.slippage"),
                 decimal(properties, "execution.commission")
+            ),
+            new BacktestRiskParameters(
+                positiveInt(properties, "risk.atr-period"),
+                positiveDecimal(properties, "risk.stop-multiplier"),
+                positiveDecimal(properties, "risk.profit-multiplier")
             ),
             new StrategySearchSpace(
                 SearchMode.valueOf(required(properties, "search.mode")),

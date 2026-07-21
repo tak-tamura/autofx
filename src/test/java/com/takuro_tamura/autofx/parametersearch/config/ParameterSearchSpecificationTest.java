@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -32,6 +33,9 @@ class ParameterSearchSpecificationTest {
         assertThat(specification.strategySearchSpace().mode()).isEqualTo(SearchMode.ONE_FACTOR_AT_A_TIME);
         assertThat(specification.strategySearchSpace().maxCandidates()).isEqualTo(100);
         assertThat(specification.strategySearchSpace().baseline().toStrategyConfig().emaPeriod1()).isEqualTo(8);
+        assertThat(specification.riskParameters().atrPeriod()).isEqualTo(14);
+        assertThat(specification.riskParameters().stopMultiplier()).isEqualByComparingTo(new BigDecimal("1.5"));
+        assertThat(specification.riskParameters().profitMultiplier()).isEqualByComparingTo(new BigDecimal("3.0"));
     }
 
     @Test
