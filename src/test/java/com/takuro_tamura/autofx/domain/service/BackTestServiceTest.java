@@ -27,6 +27,45 @@ import static org.mockito.Mockito.*;
 class BackTestServiceTest {
 
     @Test
+    void usesEarlierCandlesForPreparationButIgnoresSignalsBeforeEvaluationStart() {
+        final List<Candle> candles = List.of(
+            candle(0, "100", "101", "99"),
+            candle(1, "100", "101", "99"),
+            candle(2, "100", "101", "99"),
+            candle(3, "100", "101", "99"),
+            candle(4, "100", "101", "99")
+        );
+        final TradeConfigParameterService config = mock(TradeConfigParameterService.class);
+        final BackTestService service = new BackTestService(
+            mock(CandleService.class),
+            new OrderService(
+                mock(OrderPlacementPort.class), mock(OrderCachePort.class), mock(CandleService.class), config
+            ),
+            mock(CandleRepository.class),
+            config,
+            new BacktestExecutionPolicy()
+        );
+        final Strategy strategy = mock(Strategy.class);
+        final PreparedStrategy prepared = mock(PreparedStrategy.class);
+        when(strategy.prepare(candles)).thenReturn(prepared);
+        when(prepared.checkTradeSignal(anyInt())).thenReturn(TradeSignal.NONE);
+        when(prepared.checkTradeSignal(2)).thenReturn(TradeSignal.BUY);
+
+        final var result = service.run(
+            candles,
+            strategy,
+            new BacktestRiskParameters(2, BigDecimal.ONE, BigDecimal.ONE),
+            candles.get(2).getTime()
+        );
+
+        assertThat(result.trades()).hasSize(1);
+        assertThat(result.trades().get(0).signalDatetime()).isEqualTo(candles.get(2).getTime());
+        assertThat(result.trades().get(0).order().getFillDatetime()).isEqualTo(candles.get(3).getTime());
+        verify(strategy).prepare(candles);
+        verify(prepared, never()).checkTradeSignal(1);
+    }
+
+    @Test
     void runsExplicitDatasetWithoutReadingRepositoryOrDatabaseRiskSettings() {
         final List<Candle> candles = List.of(
             candle(0, "100", "101", "99"),

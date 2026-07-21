@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,6 +71,19 @@ public class BackTestService {
         List<Candle> candles,
         Strategy strategy,
         BacktestRiskParameters riskParameters
+    ) {
+        return run(candles, strategy, riskParameters, null);
+    }
+
+    /**
+     * 指標計算には全ローソク足を使用しつつ、指定時刻より前のシグナルでは取引しない。
+     * Out-of-sample評価で過去足をウォームアップに使い、評価期間前の取引混入を防ぐために使用する。
+     */
+    public BacktestResult run(
+        List<Candle> candles,
+        Strategy strategy,
+        BacktestRiskParameters riskParameters,
+        LocalDateTime signalEvaluationStart
     ) {
         if (candles == null || strategy == null || riskParameters == null) {
             throw new IllegalArgumentException("Candles, strategy, and backtest risk parameters are required");
@@ -139,7 +153,8 @@ public class BackTestService {
                     .ifPresent(decision -> closeTrade(trades, candle, decision.price(), decision.reason()));
             }
 
-            if (i < candles.size() - 1) {
+            if (i < candles.size() - 1
+                && (signalEvaluationStart == null || !candle.getTime().isBefore(signalEvaluationStart))) {
                 // 次足が存在しない最終足のシグナルは、約定不能なので評価対象にしない。
                 final TradeSignal signal = preparedStrategy.checkTradeSignal(i);
                 pendingAction = createPendingAction(signal, trades, candle, candles, i, riskParameters);

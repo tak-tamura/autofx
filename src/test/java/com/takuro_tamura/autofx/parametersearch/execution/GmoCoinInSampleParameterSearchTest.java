@@ -18,6 +18,8 @@ import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetReader;
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetValidator;
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetWriter;
 import com.takuro_tamura.autofx.parametersearch.dataset.KlineCandleMapper;
+import com.takuro_tamura.autofx.parametersearch.outofsample.OutOfSampleEvaluationRunner;
+import com.takuro_tamura.autofx.parametersearch.outofsample.OutOfSampleEvaluationWriter;
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleCandidateRanker;
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleSelectionWriter;
 import org.junit.jupiter.api.Disabled;
@@ -36,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
- * GMOコイン公開APIの検証済みローソク足で、In-sample探索全体を確認する手動テスト。
+ * GMOコイン公開APIの検証済みローソク足で、In-sample選定からOut-of-sample評価まで確認する手動テスト。
  * Springを起動せず、注文ポートもmockに固定するため実注文は送信されない。
  */
 @Tag("external-market-data")
@@ -110,6 +112,17 @@ class GmoCoinInSampleParameterSearchTest {
             selection,
             specification
         );
+        // Phase 6で固定した候補だけを未使用期間で評価し、In-sample順位のまま比較結果を保存する。
+        final var outOfSampleResult = new OutOfSampleEvaluationRunner(
+            candleService,
+            backTestService,
+            new BacktestMetricsCalculator()
+        ).run(candles, selection, specification);
+        final var outOfSampleWritten = new OutOfSampleEvaluationWriter().write(
+            Path.of("build", "reports", "parameter-search", "out-of-sample"),
+            outOfSampleResult,
+            specification
+        );
 
         assertThat(loadedDataset.metadata().candleCount()).isEqualTo(candles.size());
         assertThat(result.evaluations()).hasSize(specification.strategySearchSpace().candidateCount());
@@ -118,5 +131,8 @@ class GmoCoinInSampleParameterSearchTest {
         );
         assertThat(written.summaryPath()).exists();
         assertThat(written.tradesPath()).exists();
+        assertThat(outOfSampleResult.evaluations()).hasSize(selection.selectedCandidates().size());
+        assertThat(outOfSampleWritten.summaryPath()).exists();
+        assertThat(outOfSampleWritten.tradesPath()).exists();
     }
 }
