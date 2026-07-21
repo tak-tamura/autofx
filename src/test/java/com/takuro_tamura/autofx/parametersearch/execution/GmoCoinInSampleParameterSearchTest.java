@@ -12,8 +12,11 @@ import com.takuro_tamura.autofx.domain.service.port.OrderPlacementPort;
 import com.takuro_tamura.autofx.infrastructure.external.adapter.PublicApi;
 import com.takuro_tamura.autofx.parametersearch.config.ParameterSearchSpecificationLoader;
 import com.takuro_tamura.autofx.parametersearch.config.StrategyParameterCandidateGenerator;
+import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetCache;
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetFetcher;
+import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetReader;
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetValidator;
+import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetWriter;
 import com.takuro_tamura.autofx.parametersearch.dataset.KlineCandleMapper;
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleCandidateRanker;
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleSelectionWriter;
@@ -54,9 +57,23 @@ class GmoCoinInSampleParameterSearchTest {
             () -> LockSupport.parkNanos(Duration.ofMillis(250).toNanos())
         );
 
-        // Phase 2と同じ品質検証を通過したデータだけを探索処理へ渡す。
-        final var candles = fetcher.fetch(specification);
-        final var validation = new HistoricalDatasetValidator().validate(candles, specification);
+        // 同じ市場条件・期間のファイルがあればAPIを呼ばず、検証済みキャッシュを探索処理へ渡す。
+        final var loadedDataset = new HistoricalDatasetCache(
+            fetcher,
+            new HistoricalDatasetValidator(),
+            new HistoricalDatasetWriter(Clock.systemUTC()),
+            new HistoricalDatasetReader()
+        ).loadOrFetch(
+            Path.of("build", "reports", "parameter-search", "datasets"),
+            specification
+        );
+        log.info(
+            "Historical dataset loaded: datasetId={}, cacheHit={}, candleCount={}",
+            loadedDataset.metadata().datasetId(),
+            loadedDataset.cacheHit(),
+            loadedDataset.candles().size()
+        );
+        final var candles = loadedDataset.candles();
 
         final TradeConfigParameterService databaseConfig = mock(TradeConfigParameterService.class);
         final CandleService candleService = new CandleService(databaseConfig, mock(CandleRepository.class));
@@ -81,7 +98,7 @@ class GmoCoinInSampleParameterSearchTest {
         );
 
         final InSampleParameterSearchResult result = runner.run(
-            "gmo-public-api-" + specification.periods().datasetFrom() + "-" + specification.periods().datasetTo(),
+            loadedDataset.metadata().datasetId(),
             candles,
             specification
         );
@@ -94,7 +111,7 @@ class GmoCoinInSampleParameterSearchTest {
             specification
         );
 
-        assertThat(validation.candleCount()).isEqualTo(candles.size());
+        assertThat(loadedDataset.metadata().candleCount()).isEqualTo(candles.size());
         assertThat(result.evaluations()).hasSize(specification.strategySearchSpace().candidateCount());
         assertThat(result.evaluations()).allSatisfy(evaluation ->
             assertThat(evaluation.backtestResult().assumptions()).isEqualTo(specification.executionAssumptions())

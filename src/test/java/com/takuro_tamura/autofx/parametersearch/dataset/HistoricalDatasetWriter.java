@@ -11,12 +11,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 検証済みローソク足を再利用可能なCSVと、再現条件を保持するJSONメタデータとして保存する。
@@ -38,14 +34,15 @@ public class HistoricalDatasetWriter {
         ParameterSearchSpecification specification,
         DatasetValidationReport validationReport
     ) {
-        final String datasetId = datasetId(specification);
-        final Path csvPath = outputDirectory.resolve(datasetId + ".csv");
-        final Path metadataPath = outputDirectory.resolve(datasetId + ".metadata.json");
+        final HistoricalDatasetFiles files = HistoricalDatasetFiles.from(outputDirectory, specification);
+        final String datasetId = files.datasetId();
+        final Path csvPath = files.csvPath();
+        final Path metadataPath = files.metadataPath();
         // ハッシュ対象と実際に書き込む内容を同じbyte配列にし、データセット識別のずれを防ぐ。
         final byte[] csv = csv(candles).getBytes(StandardCharsets.UTF_8);
         final HistoricalDatasetMetadata metadata = new HistoricalDatasetMetadata(
             datasetId,
-            sha256(csv),
+            HistoricalDatasetHash.sha256(csv),
             SOURCE,
             specification.marketData().currencyPair(),
             specification.marketData().timeFrame(),
@@ -75,19 +72,6 @@ public class HistoricalDatasetWriter {
         return new WrittenDataset(csvPath, metadataPath, metadata);
     }
 
-    private String datasetId(ParameterSearchSpecification specification) {
-        // データの市場条件と要求期間がファイル名だけでも判別できる安定したIDを作る。
-        return String.format(
-            Locale.ROOT,
-            "%s_%s_%s_%s_%s",
-            specification.marketData().currencyPair().name().toLowerCase(Locale.ROOT),
-            specification.marketData().timeFrame().getLabel(),
-            specification.periods().datasetFrom().toString().replace("-", ""),
-            specification.periods().datasetTo().toString().replace("-", ""),
-            specification.marketData().priceType().name().toLowerCase(Locale.ROOT)
-        );
-    }
-
     private String csv(List<Candle> candles) {
         final StringBuilder csv = new StringBuilder("time,currencyPair,timeFrame,open,high,low,close\n");
         for (Candle candle : candles) {
@@ -104,15 +88,6 @@ public class HistoricalDatasetWriter {
 
     private String plain(BigDecimal value) {
         return value.toPlainString();
-    }
-
-    private String sha256(byte[] content) {
-        // 同じIDでも内容が異なる事故を検知できるよう、CSV全体のSHA-256をメタデータへ記録する。
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
-        }
     }
 
     public record WrittenDataset(
