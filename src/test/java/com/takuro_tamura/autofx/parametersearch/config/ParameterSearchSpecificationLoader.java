@@ -89,6 +89,13 @@ public final class ParameterSearchSpecificationLoader {
                 decimalList(properties, "search.candidates.bbands-multiplier"),
                 intList(properties, "search.candidates.adx-period"),
                 decimalList(properties, "search.candidates.adx-threshold")
+            ),
+            new CandidateSelectionCriteria(
+                positiveInt(properties, "selection.minimum-trades"),
+                decimal(properties, "selection.minimum-net-profit"),
+                decimal(properties, "selection.minimum-profit-factor"),
+                decimal(properties, "selection.minimum-average-r"),
+                positiveInt(properties, "selection.maximum-selected-candidates")
             )
         );
     }

@@ -36,6 +36,8 @@ class ParameterSearchSpecificationTest {
         assertThat(specification.riskParameters().atrPeriod()).isEqualTo(14);
         assertThat(specification.riskParameters().stopMultiplier()).isEqualByComparingTo(new BigDecimal("1.5"));
         assertThat(specification.riskParameters().profitMultiplier()).isEqualByComparingTo(new BigDecimal("3.0"));
+        assertThat(specification.selectionCriteria().minimumTrades()).isEqualTo(30);
+        assertThat(specification.selectionCriteria().maximumSelectedCandidates()).isEqualTo(5);
     }
 
     @Test

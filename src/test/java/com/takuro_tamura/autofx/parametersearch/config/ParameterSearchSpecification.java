@@ -17,11 +17,12 @@ public record ParameterSearchSpecification(
     EvaluationPeriods periods,
     BacktestAssumptions executionAssumptions,
     BacktestRiskParameters riskParameters,
-    StrategySearchSpace strategySearchSpace
+    StrategySearchSpace strategySearchSpace,
+    CandidateSelectionCriteria selectionCriteria
 ) {
     public ParameterSearchSpecification {
         if (marketData == null || periods == null || executionAssumptions == null
-            || riskParameters == null || strategySearchSpace == null) {
+            || riskParameters == null || strategySearchSpace == null || selectionCriteria == null) {
             throw new IllegalArgumentException("All parameter-search conditions are required");
         }
     }

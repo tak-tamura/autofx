@@ -40,7 +40,8 @@ final class DatasetTestFixtures {
             BacktestAssumptions.current(),
             ParameterSearchSpecificationLoader.load("parameter-search.properties").riskParameters(),
             // データセット用fixtureでも、本番の探索設定と同じ検証済み候補空間を使用する。
-            ParameterSearchSpecificationLoader.load("parameter-search.properties").strategySearchSpace()
+            ParameterSearchSpecificationLoader.load("parameter-search.properties").strategySearchSpace(),
+            ParameterSearchSpecificationLoader.load("parameter-search.properties").selectionCriteria()
         );
     }
 

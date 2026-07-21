@@ -15,6 +15,8 @@ import com.takuro_tamura.autofx.parametersearch.config.StrategyParameterCandidat
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetFetcher;
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetValidator;
 import com.takuro_tamura.autofx.parametersearch.dataset.KlineCandleMapper;
+import com.takuro_tamura.autofx.parametersearch.selection.InSampleCandidateRanker;
+import com.takuro_tamura.autofx.parametersearch.selection.InSampleSelectionWriter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.nio.file.Path;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,13 +85,21 @@ class GmoCoinInSampleParameterSearchTest {
             candles,
             specification
         );
-        log.info("In-sample parameter search result: {}", result);
 
+        // Out-of-sampleデータを参照せず候補を固定し、順位表と取引台帳をレビュー用に保存する。
+        final var selection = new InSampleCandidateRanker().rank(result, specification.selectionCriteria());
+        final var written = new InSampleSelectionWriter().write(
+            Path.of("build", "reports", "parameter-search", "selections"),
+            selection,
+            specification
+        );
 
         assertThat(validation.candleCount()).isEqualTo(candles.size());
         assertThat(result.evaluations()).hasSize(specification.strategySearchSpace().candidateCount());
         assertThat(result.evaluations()).allSatisfy(evaluation ->
             assertThat(evaluation.backtestResult().assumptions()).isEqualTo(specification.executionAssumptions())
         );
+        assertThat(written.summaryPath()).exists();
+        assertThat(written.tradesPath()).exists();
     }
 }
