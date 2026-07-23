@@ -22,6 +22,8 @@ import com.takuro_tamura.autofx.parametersearch.outofsample.OutOfSampleEvaluatio
 import com.takuro_tamura.autofx.parametersearch.outofsample.OutOfSampleEvaluationWriter;
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleCandidateRanker;
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleSelectionWriter;
+import com.takuro_tamura.autofx.parametersearch.walkforward.WalkForwardEvaluationRunner;
+import com.takuro_tamura.autofx.parametersearch.walkforward.WalkForwardEvaluationWriter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -42,7 +44,7 @@ import static org.mockito.Mockito.mock;
  * Springを起動せず、注文ポートもmockに固定するため実注文は送信されない。
  */
 @Tag("external-market-data")
-@Disabled("Run manually only when evaluating the configured parameter candidates")
+//@Disabled("Run manually only when evaluating the configured parameter candidates")
 class GmoCoinInSampleParameterSearchTest {
     private static final String KLINES_URL = "https://forex-api.coin.z.com/public/v1/klines";
 
@@ -123,6 +125,17 @@ class GmoCoinInSampleParameterSearchTest {
             outOfSampleResult,
             specification
         );
+        // 固定候補を四半期ごとに再生し、期間安定性とpaper運用レビュー可否を出力する。
+        final var walkForwardResult = new WalkForwardEvaluationRunner(
+            candleService,
+            backTestService,
+            new BacktestMetricsCalculator()
+        ).run(candles, outOfSampleResult, specification);
+        final var walkForwardWritten = new WalkForwardEvaluationWriter().write(
+            Path.of("build", "reports", "parameter-search", "walk-forward"),
+            walkForwardResult,
+            specification
+        );
 
         assertThat(loadedDataset.metadata().candleCount()).isEqualTo(candles.size());
         assertThat(result.evaluations()).hasSize(specification.strategySearchSpace().candidateCount());
@@ -134,5 +147,9 @@ class GmoCoinInSampleParameterSearchTest {
         assertThat(outOfSampleResult.evaluations()).hasSize(selection.selectedCandidates().size());
         assertThat(outOfSampleWritten.summaryPath()).exists();
         assertThat(outOfSampleWritten.tradesPath()).exists();
+        assertThat(walkForwardResult.candidates()).hasSize(selection.selectedCandidates().size());
+        assertThat(walkForwardWritten.summaryPath()).exists();
+        assertThat(walkForwardWritten.windowsPath()).exists();
+        assertThat(walkForwardWritten.tradesPath()).exists();
     }
 }

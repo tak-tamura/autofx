@@ -38,6 +38,10 @@ class ParameterSearchSpecificationTest {
         assertThat(specification.riskParameters().profitMultiplier()).isEqualByComparingTo(new BigDecimal("3.0"));
         assertThat(specification.selectionCriteria().minimumTrades()).isEqualTo(30);
         assertThat(specification.selectionCriteria().maximumSelectedCandidates()).isEqualTo(5);
+        assertThat(specification.walkForwardCriteria().windowMonths()).isEqualTo(3);
+        assertThat(specification.walkForwardCriteria().minimumTradesPerWindow()).isEqualTo(5);
+        assertThat(specification.walkForwardCriteria().minimumProfitableWindowRate())
+            .isEqualByComparingTo("0.75");
     }
 
     @Test

@@ -96,6 +96,12 @@ public final class ParameterSearchSpecificationLoader {
                 decimal(properties, "selection.minimum-profit-factor"),
                 decimal(properties, "selection.minimum-average-r"),
                 positiveInt(properties, "selection.maximum-selected-candidates")
+            ),
+            new WalkForwardCriteria(
+                positiveInt(properties, "walk-forward.window-months"),
+                positiveInt(properties, "walk-forward.minimum-trades-per-window"),
+                decimal(properties, "walk-forward.minimum-profitable-window-rate"),
+                decimal(properties, "walk-forward.minimum-positive-average-r-window-rate")
             )
         );
     }
