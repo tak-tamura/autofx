@@ -26,7 +26,6 @@ import com.takuro_tamura.autofx.parametersearch.selection.InSampleCandidateRanke
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleSelectionWriter;
 import com.takuro_tamura.autofx.parametersearch.walkforward.WalkForwardEvaluationRunner;
 import com.takuro_tamura.autofx.parametersearch.walkforward.WalkForwardEvaluationWriter;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -46,7 +45,6 @@ import static org.mockito.Mockito.mock;
  * Springを起動せず、注文ポートもmockに固定するため実注文は送信されない。
  */
 @Tag("external-market-data")
-@Disabled("Run manually only when evaluating the configured parameter candidates")
 class GmoCoinInSampleParameterSearchTest {
     private static final String KLINES_URL = "https://forex-api.coin.z.com/public/v1/klines";
 

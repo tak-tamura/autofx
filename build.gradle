@@ -59,7 +59,27 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	// 外部APIへ接続する手動テストは、通常のテスト実行から確実に分離する。
+	useJUnitPlatform {
+		excludeTags 'external-market-data'
+	}
+}
+
+tasks.register('parameterSearch', Test) {
+	group = 'verification'
+	description = 'Runs the long-running parameter search using GMO Coin public market data (may access an external API).'
+
+	// 通常テストとは別の明示実行に限定し、探索処理以外の外部APIテストを混在させない。
+	useJUnitPlatform {
+		includeTags 'external-market-data'
+	}
+	filter {
+		includeTestsMatching 'com.takuro_tamura.autofx.parametersearch.execution.GmoCoinInSampleParameterSearchTest'
+	}
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	shouldRunAfter tasks.named('test')
 }
 
 processResources {
