@@ -18,6 +18,8 @@ import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetReader;
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetValidator;
 import com.takuro_tamura.autofx.parametersearch.dataset.HistoricalDatasetWriter;
 import com.takuro_tamura.autofx.parametersearch.dataset.KlineCandleMapper;
+import com.takuro_tamura.autofx.parametersearch.finalization.ParameterSearchFinalReportWriter;
+import com.takuro_tamura.autofx.parametersearch.finalization.ParameterSearchFinalizer;
 import com.takuro_tamura.autofx.parametersearch.outofsample.OutOfSampleEvaluationRunner;
 import com.takuro_tamura.autofx.parametersearch.outofsample.OutOfSampleEvaluationWriter;
 import com.takuro_tamura.autofx.parametersearch.selection.InSampleCandidateRanker;
@@ -44,7 +46,7 @@ import static org.mockito.Mockito.mock;
  * Springを起動せず、注文ポートもmockに固定するため実注文は送信されない。
  */
 @Tag("external-market-data")
-//@Disabled("Run manually only when evaluating the configured parameter candidates")
+@Disabled("Run manually only when evaluating the configured parameter candidates")
 class GmoCoinInSampleParameterSearchTest {
     private static final String KLINES_URL = "https://forex-api.coin.z.com/public/v1/klines";
 
@@ -136,6 +138,18 @@ class GmoCoinInSampleParameterSearchTest {
             walkForwardResult,
             specification
         );
+        // 通過候補をpaperレビュー用manifestへ固定する。DBや取引モードは一切変更しない。
+        final var finalResult = new ParameterSearchFinalizer().assemble(
+            loadedDataset.metadata(),
+            outOfSampleResult,
+            walkForwardResult,
+            specification
+        );
+        final var finalWritten = new ParameterSearchFinalReportWriter(Clock.systemUTC()).write(
+            Path.of("build", "reports", "parameter-search", "final"),
+            finalResult,
+            specification
+        );
 
         assertThat(loadedDataset.metadata().candleCount()).isEqualTo(candles.size());
         assertThat(result.evaluations()).hasSize(specification.strategySearchSpace().candidateCount());
@@ -151,5 +165,7 @@ class GmoCoinInSampleParameterSearchTest {
         assertThat(walkForwardWritten.summaryPath()).exists();
         assertThat(walkForwardWritten.windowsPath()).exists();
         assertThat(walkForwardWritten.tradesPath()).exists();
+        assertThat(finalWritten.reviewPath()).exists();
+        assertThat(finalWritten.manifestPath()).exists();
     }
 }
