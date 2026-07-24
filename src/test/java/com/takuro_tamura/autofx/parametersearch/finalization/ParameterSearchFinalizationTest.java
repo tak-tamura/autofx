@@ -87,6 +87,9 @@ class ParameterSearchFinalizationTest {
         assertThat(manifest.get("liveTradingAllowed").asBoolean()).isFalse();
         assertThat(manifest.get("candidates")).hasSize(1);
         assertThat(manifest.get("candidates").get(0).get("inSampleRank").asInt()).isEqualTo(1);
+        assertThat(Files.readString(written.manifestPath()))
+            .contains("\"adxThreshold\" : 20")
+            .doesNotContain("2E+1");
         assertThatIllegalStateException().isThrownBy(() ->
             writer.write(directory, result, input.specification())
         );

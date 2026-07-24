@@ -1,0 +1,17 @@
+{
+  "currencyPair": "USD_JPY",
+  "timeFrame": "1h",
+  "atrPeriod": 14,
+  "strategyParameters": {
+    "emaShortPeriod": 8,
+    "emaLongPeriod": 21,
+    "rsiPeriod": 14,
+    "macdFastPeriod": 12,
+    "macdSlowPeriod": 26,
+    "macdSignalPeriod": 9,
+    "bBandsPeriod": 20,
+    "bBandsMultiplier": 2.0,
+    "adxPeriod": 14,
+    "adxThreshold": 20.0
+  }
+}

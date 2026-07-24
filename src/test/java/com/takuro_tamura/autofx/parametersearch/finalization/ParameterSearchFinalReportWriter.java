@@ -1,5 +1,6 @@
 package com.takuro_tamura.autofx.parametersearch.finalization;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.takuro_tamura.autofx.domain.backtest.BacktestAssumptions;
@@ -28,7 +29,10 @@ import java.util.stream.Collectors;
  */
 public class ParameterSearchFinalReportWriter {
     private static final int MANIFEST_SCHEMA_VERSION = 1;
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .registerModule(new JavaTimeModule())
+        // BigDecimalをJSON数値のまま保ちつつ、2E+1ではなく20のような通常表記で保存する。
+        .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
     private final Clock clock;
 
     public ParameterSearchFinalReportWriter(Clock clock) {

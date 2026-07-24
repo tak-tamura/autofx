@@ -61,7 +61,7 @@ dependencies {
 tasks.named('test') {
 	// 外部APIへ接続する手動テストは、通常のテスト実行から確実に分離する。
 	useJUnitPlatform {
-		excludeTags 'external-market-data'
+		excludeTags 'external-market-data', 'paper-candidate-preparation'
 	}
 }
 
@@ -79,6 +79,37 @@ tasks.register('parameterSearch', Test) {
 
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
+	shouldRunAfter tasks.named('test')
+}
+
+tasks.register('preparePaperCandidate', Test) {
+	group = 'verification'
+	description = 'Validates a Phase 9 manifest and writes an immutable paper candidate review plan without applying settings.'
+
+	// 入力を必須にして、暗黙の候補選択や実行環境のDB参照を防ぐ。
+	doFirst {
+		['manifest', 'candidateRank', 'currentConfiguration'].each { propertyName ->
+			if (!project.hasProperty(propertyName)) {
+				throw new GradleException("Required Gradle property is missing: -P${propertyName}=...")
+			}
+		}
+	}
+	systemProperty 'paperManifest', providers.gradleProperty('manifest').getOrElse('')
+	systemProperty 'paperCandidateRank', providers.gradleProperty('candidateRank').getOrElse('')
+	systemProperty 'paperCurrentConfiguration', providers.gradleProperty('currentConfiguration').getOrElse('')
+	systemProperty 'paperPreparationOutput', providers.gradleProperty('outputDirectory')
+		.getOrElse('build/reports/parameter-search/paper-preparation')
+
+	useJUnitPlatform {
+		includeTags 'paper-candidate-preparation'
+	}
+	filter {
+		includeTestsMatching 'com.takuro_tamura.autofx.parametersearch.paper.PreparePaperCandidateTaskTest'
+	}
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	// 外部に生成する不変計画をGradleのテストキャッシュで暗黙に省略しない。
+	outputs.upToDateWhen { false }
 	shouldRunAfter tasks.named('test')
 }
 
