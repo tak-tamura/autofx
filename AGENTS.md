@@ -244,6 +244,8 @@ Any code capable of creating, changing, or cancelling an order must follow these
 ### Live-trading protection
 
 - Default local and test environments to paper trading or a no-op broker.
+- A real-time paper-trading engine is not currently implemented. References to a `paper candidate` in parameter-search output mean a candidate for manual review, not a simulated real-time trading mode.
+- Until paper trading is implemented and verified, tests and parameter-search workflows must use mocked or no-op order ports and must not be described as executing paper trades.
 - Never enable live trading merely because credentials are present.
 - Require an explicit environment or configuration flag for live order submission.
 - Fail closed when critical risk configuration is missing or invalid.
@@ -307,6 +309,33 @@ Backtests must be reproducible and must not overstate performance.
 - Detect missing and duplicate candles.
 - Make random behavior deterministic through a fixed seed.
 - Preserve a trade-by-trade ledger, not only aggregate metrics.
+
+### Current backtest execution model
+
+The current backtest implementation uses the following fixed assumptions. Treat changes to any of them as trading-behavior changes requiring focused regression tests and a comparability warning.
+
+- Evaluate signals using completed candles only.
+- Fill an accepted entry at the next candle's open; never fill it on the signal candle.
+- Fix ATR-based stop-loss and take-profit levels when the entry is filled.
+- If a candle opens beyond a protective level, close at the candle open rather than assuming a fill at the requested protective price.
+- After the gap check, use the candle high and low to detect stop-loss and take-profit contact.
+- If both protective levels are touched in the same candle and no lower-timeframe ordering is available, resolve the ambiguity conservatively with stop-loss first.
+- Close any remaining position at the final candle's close and record the exit reason.
+- Record the execution assumptions with every backtest result and require identical assumptions when comparing candidates.
+
+Transaction-cost modelling is not yet implemented. `spread`, `slippage`, and `commission` are recorded explicitly as zero, and the metrics calculator rejects non-zero assumptions because they have not been applied trade by trade. Do not describe current results as transaction-cost-adjusted, and do not set non-zero values merely to label the report; implement their effect on fills and P&L first.
+
+### Parameter-search workflow
+
+- The reproducible search specification is `src/test/resources/parameter-search.properties`.
+- `./gradlew parameterSearch` is an explicit, long-running test task that may call the GMO Coin public market-data API. It must remain excluded from the normal `test` task.
+- Historical candles are cached with metadata and a content hash. Reuse only a cache whose market identity, requested period, quality checks, and hash all match.
+- Keep In-sample and Out-of-sample periods contiguous and non-overlapping. Candidate selection must use only In-sample results; Out-of-sample results must not rerank or replace the fixed candidates.
+- Walk-forward evaluation replays the fixed candidates without re-optimizing them in each window.
+- Search, selection, OOS, walk-forward, and final-review outputs must preserve the dataset identity, parameters, assumptions, metrics, and trade ledger needed for review.
+- Final reports and paper-candidate preparation plans are immutable review artifacts. Do not silently overwrite them.
+- A passing candidate may be exported only as requiring manual paper review with live trading disallowed. Do not automatically update the configuration database, enable trading, increase order size, or submit orders from parameter-search results.
+- Use `PARAMETER_SEARCH_TEST_MANUAL.md` for the current execution procedure, output locations, cache handling, and rerun precautions.
 
 At minimum, report:
 
