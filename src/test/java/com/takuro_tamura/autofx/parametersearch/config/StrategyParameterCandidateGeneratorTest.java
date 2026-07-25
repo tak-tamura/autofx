@@ -16,11 +16,12 @@ class StrategyParameterCandidateGeneratorTest {
         final StrategySearchSpace searchSpace = ParameterSearchSpecificationLoader
             .load("parameter-search.properties")
             .strategySearchSpace();
+        final int expectedCandidateCount = searchSpace.candidateCount();
 
         final List<StrategyParameterSet> candidates = generator.generate(searchSpace);
 
-        assertThat(searchSpace.candidateCount()).isEqualTo(39);
-        assertThat(candidates).hasSize(39).doesNotHaveDuplicates();
+        // propertiesの候補を増減しても、計算された候補数と実際の生成数の整合性を検証する。
+        assertThat(candidates).hasSize(expectedCandidateCount).doesNotHaveDuplicates();
         assertThat(candidates.get(0)).isEqualTo(searchSpace.baseline());
         assertThat(candidates).allSatisfy(candidate -> {
             assertThat(candidate.emaShortPeriod()).isLessThan(candidate.emaLongPeriod());
@@ -36,12 +37,14 @@ class StrategyParameterCandidateGeneratorTest {
         final StrategySearchSpace original = ParameterSearchSpecificationLoader
             .load("parameter-search.properties")
             .strategySearchSpace();
-        final StrategySearchSpace limited = copyWithLimit(original, 38);
+        final int generatedCandidateCount = original.candidateCount();
+        final int insufficientLimit = generatedCandidateCount - 1;
+        final StrategySearchSpace limited = copyWithLimit(original, insufficientLimit);
 
         assertThatIllegalArgumentException()
             .isThrownBy(() -> generator.generate(limited))
-            .withMessageContaining("39")
-            .withMessageContaining("38");
+            .withMessageContaining(String.valueOf(generatedCandidateCount))
+            .withMessageContaining(String.valueOf(insufficientLimit));
     }
 
     @Test

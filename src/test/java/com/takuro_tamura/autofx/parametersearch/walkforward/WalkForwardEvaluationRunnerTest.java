@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,40 +35,39 @@ class WalkForwardEvaluationRunnerTest {
 
     @Test
     void passesCandidateMeetingEveryPredefinedWindowCriterion() {
-        final BacktestMetrics[] windowMetrics = {
-            metrics(5, "100", "0.20"),
-            metrics(6, "50", "0.10"),
-            metrics(7, "20", "0.05"),
-            metrics(5, "-10", "-0.02")
-        };
+        final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final int windowCount = windowStarts(specification).size();
+        final BacktestMetrics[] windowMetrics = new BacktestMetrics[windowCount];
+        java.util.Arrays.fill(windowMetrics, metrics(
+            specification.walkForwardCriteria().minimumTradesPerWindow(), "100", "0.20"
+        ));
 
         final WalkForwardCandidateEvaluation candidate = run(windowMetrics);
 
         assertThat(candidate.windows()).extracting(value -> value.window().start())
-            .containsExactly(
-                LocalDateTime.of(2025, 1, 1, 0, 0),
-                LocalDateTime.of(2025, 4, 1, 0, 0),
-                LocalDateTime.of(2025, 7, 1, 0, 0),
-                LocalDateTime.of(2025, 10, 1, 0, 0)
-            );
-        assertThat(candidate.profitableWindowRate()).isEqualByComparingTo("0.75");
-        assertThat(candidate.positiveAverageRWindowRate()).isEqualByComparingTo("0.75");
+            .containsExactlyElementsOf(windowStarts(specification));
+        assertThat(candidate.profitableWindowRate()).isEqualByComparingTo(BigDecimal.ONE);
+        assertThat(candidate.positiveAverageRWindowRate()).isEqualByComparingTo(BigDecimal.ONE);
         assertThat(candidate.passed()).isTrue();
         assertThat(candidate.rejectionReasons()).isEmpty();
     }
 
     @Test
     void recordsAllFailedWalkForwardCriteria() {
-        final WalkForwardCandidateEvaluation candidate = run(new BacktestMetrics[]{
-            metrics(4, "100", "0.20"),
-            metrics(5, "-10", "-0.10"),
-            metrics(5, "-20", "-0.20"),
-            metrics(5, "10", "0.10")
-        });
+        final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final int windowCount = windowStarts(specification).size();
+        final BacktestMetrics[] metrics = new BacktestMetrics[windowCount];
+        java.util.Arrays.fill(metrics, metrics(
+            specification.walkForwardCriteria().minimumTradesPerWindow(), "-10", "-0.10"
+        ));
+        metrics[0] = metrics(
+            specification.walkForwardCriteria().minimumTradesPerWindow() - 1, "-10", "-0.10"
+        );
+        final WalkForwardCandidateEvaluation candidate = run(metrics);
 
         assertThat(candidate.passed()).isFalse();
-        assertThat(candidate.profitableWindowRate()).isEqualByComparingTo("0.5");
-        assertThat(candidate.positiveAverageRWindowRate()).isEqualByComparingTo("0.5");
+        assertThat(candidate.profitableWindowRate()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(candidate.positiveAverageRWindowRate()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(candidate.rejectionReasons()).containsExactly(
             WalkForwardRejectionReason.INSUFFICIENT_TRADES_IN_ONE_OR_MORE_WINDOWS,
             WalkForwardRejectionReason.PROFITABLE_WINDOW_RATE_BELOW_MINIMUM,
@@ -77,6 +77,8 @@ class WalkForwardEvaluationRunnerTest {
 
     private WalkForwardCandidateEvaluation run(BacktestMetrics[] windowMetrics) {
         final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final LocalDateTime outStart = specification.periods().outOfSampleFrom().atStartOfDay();
+        final LocalDateTime outEnd = specification.periods().outOfSampleTo().plusDays(1).atStartOfDay();
         final RankedCandidate selected = new RankedCandidate(
             1, true, true, List.of(),
             new CandidateBacktestEvaluation(
@@ -88,37 +90,55 @@ class WalkForwardEvaluationRunnerTest {
         final BacktestResult emptyResult = new BacktestResult(List.of(), BacktestAssumptions.current());
         final OutOfSampleEvaluationResult outOfSample = new OutOfSampleEvaluationResult(
             "fixed-dataset",
-            LocalDateTime.of(2025, 1, 1, 0, 0),
-            LocalDateTime.of(2026, 1, 1, 0, 0),
+            outStart,
+            outEnd,
             List.of(new OutOfSampleCandidateEvaluation(selected, emptyResult, metrics(20, "100", "0.10")))
         );
         final BackTestService backTestService = mock(BackTestService.class);
         when(backTestService.run(any(), any(EmaCrossStrategy.class), any(), any(LocalDateTime.class)))
             .thenReturn(emptyResult);
         final BacktestMetricsCalculator calculator = mock(BacktestMetricsCalculator.class);
-        when(calculator.calculate(any(), any(), any())).thenReturn(
-            windowMetrics[0], windowMetrics[1], windowMetrics[2], windowMetrics[3]
-        );
+        final java.util.concurrent.atomic.AtomicInteger metricIndex = new java.util.concurrent.atomic.AtomicInteger();
+        when(calculator.calculate(any(), any(), any()))
+            .thenAnswer(ignored -> windowMetrics[metricIndex.getAndIncrement()]);
         final WalkForwardEvaluationResult result = new WalkForwardEvaluationRunner(
             mock(CandleService.class), backTestService, calculator
-        ).run(dataset(), outOfSample, specification);
+        ).run(dataset(specification), outOfSample, specification);
 
-        verify(backTestService, times(4)).run(any(), any(EmaCrossStrategy.class), any(), any(LocalDateTime.class));
+        verify(backTestService, times(windowMetrics.length))
+            .run(any(), any(EmaCrossStrategy.class), any(), any(LocalDateTime.class));
         return result.candidates().get(0);
     }
 
-    private List<Candle> dataset() {
-        return List.of(
-            candle(LocalDateTime.of(2024, 12, 31, 23, 0)),
-            candle(LocalDateTime.of(2025, 1, 1, 0, 0)),
-            candle(LocalDateTime.of(2025, 3, 31, 23, 0)),
-            candle(LocalDateTime.of(2025, 4, 1, 0, 0)),
-            candle(LocalDateTime.of(2025, 6, 30, 23, 0)),
-            candle(LocalDateTime.of(2025, 7, 1, 0, 0)),
-            candle(LocalDateTime.of(2025, 9, 30, 23, 0)),
-            candle(LocalDateTime.of(2025, 10, 1, 0, 0)),
-            candle(LocalDateTime.of(2025, 12, 31, 23, 0))
-        );
+    private List<Candle> dataset(
+        com.takuro_tamura.autofx.parametersearch.config.ParameterSearchSpecification specification
+    ) {
+        final LocalDateTime end = specification.periods().outOfSampleTo().plusDays(1).atStartOfDay();
+        final List<Candle> candles = new ArrayList<>();
+        candles.add(candle(specification.periods().outOfSampleFrom().atStartOfDay().minusHours(1)));
+        for (LocalDateTime start : windowStarts(specification)) {
+            final LocalDateTime windowEnd = start
+                .plusMonths(specification.walkForwardCriteria().windowMonths())
+                .isBefore(end)
+                ? start.plusMonths(specification.walkForwardCriteria().windowMonths())
+                : end;
+            candles.add(candle(start));
+            candles.add(candle(windowEnd.minusHours(1)));
+        }
+        return candles.stream().distinct().sorted(java.util.Comparator.comparing(Candle::getTime)).toList();
+    }
+
+    private List<LocalDateTime> windowStarts(
+        com.takuro_tamura.autofx.parametersearch.config.ParameterSearchSpecification specification
+    ) {
+        final List<LocalDateTime> starts = new ArrayList<>();
+        final LocalDateTime end = specification.periods().outOfSampleTo().plusDays(1).atStartOfDay();
+        for (LocalDateTime start = specification.periods().outOfSampleFrom().atStartOfDay();
+             start.isBefore(end);
+             start = start.plusMonths(specification.walkForwardCriteria().windowMonths())) {
+            starts.add(start);
+        }
+        return starts;
     }
 
     private Candle candle(LocalDateTime time) {

@@ -97,14 +97,16 @@ class ParameterSearchFinalizationTest {
 
     private FinalizationInput input() {
         final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final LocalDateTime outStart = specification.periods().outOfSampleFrom().atStartOfDay();
+        final LocalDateTime outEnd = specification.periods().outOfSampleTo().plusDays(1).atStartOfDay();
         final StrategyParameterSet baseline = specification.strategySearchSpace().baseline();
         final RankedCandidate first = ranked(1, baseline, metrics("500"));
-        final RankedCandidate second = ranked(2, withEmaShort(baseline, 7), metrics("300"));
+        final RankedCandidate second = ranked(2, baseline, metrics("300"));
         final BacktestResult empty = new BacktestResult(List.of(), BacktestAssumptions.current());
         final OutOfSampleEvaluationResult outOfSample = new OutOfSampleEvaluationResult(
             "fixed-dataset",
-            LocalDateTime.of(2025, 1, 1, 0, 0),
-            LocalDateTime.of(2026, 1, 1, 0, 0),
+            outStart,
+            outEnd,
             List.of(
                 new OutOfSampleCandidateEvaluation(first, empty, metrics("200")),
                 new OutOfSampleCandidateEvaluation(second, empty, metrics("1000"))
@@ -112,15 +114,19 @@ class ParameterSearchFinalizationTest {
         );
         final WalkForwardWindowEvaluation window = new WalkForwardWindowEvaluation(
             new WalkForwardWindow(
-                1, LocalDateTime.of(2025, 1, 1, 0, 0), LocalDateTime.of(2025, 4, 1, 0, 0)
+                1,
+                outStart,
+                outStart.plusMonths(specification.walkForwardCriteria().windowMonths()).isBefore(outEnd)
+                    ? outStart.plusMonths(specification.walkForwardCriteria().windowMonths())
+                    : outEnd
             ),
             empty,
             metrics("100")
         );
         final WalkForwardEvaluationResult walkForward = new WalkForwardEvaluationResult(
             "fixed-dataset",
-            LocalDateTime.of(2025, 1, 1, 0, 0),
-            LocalDateTime.of(2026, 1, 1, 0, 0),
+            outStart,
+            outEnd,
             specification.walkForwardCriteria(),
             List.of(
                 new WalkForwardCandidateEvaluation(
@@ -145,18 +151,19 @@ class ParameterSearchFinalizationTest {
     }
 
     private HistoricalDatasetMetadata metadata(String datasetId) {
+        final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
         return new HistoricalDatasetMetadata(
             datasetId,
             "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             "GMO_COIN_PUBLIC_API",
-            CurrencyPair.USD_JPY,
-            TimeFrame.HOUR,
-            MarketPriceType.ASK,
-            "Asia/Tokyo",
-            LocalDate.of(2023, 10, 28),
-            LocalDate.of(2025, 12, 31),
-            LocalDateTime.of(2023, 10, 28, 6, 0),
-            LocalDateTime.of(2026, 1, 1, 5, 0),
+            specification.marketData().currencyPair(),
+            specification.marketData().timeFrame(),
+            specification.marketData().priceType(),
+            specification.marketData().timeZone().getId(),
+            specification.periods().datasetFrom(),
+            specification.periods().datasetTo(),
+            specification.periods().datasetFrom().atStartOfDay(),
+            specification.periods().datasetTo().atTime(23, 0),
             10_000,
             100,
             0,
@@ -172,14 +179,6 @@ class ParameterSearchFinalizationTest {
             Optional.of(new BigDecimal("1.5")), BigDecimal.valueOf(500), 3, 3,
             List.of(new BigDecimal("0.2")), Optional.of(new BigDecimal("0.2")),
             new BigDecimal("0.1"), BigDecimal.ZERO
-        );
-    }
-
-    private StrategyParameterSet withEmaShort(StrategyParameterSet source, int value) {
-        return new StrategyParameterSet(
-            value, source.emaLongPeriod(), source.rsiPeriod(), source.macdFastPeriod(),
-            source.macdSlowPeriod(), source.macdSignalPeriod(), source.bBandsPeriod(),
-            source.bBandsMultiplier(), source.adxPeriod(), source.adxThreshold()
         );
     }
 

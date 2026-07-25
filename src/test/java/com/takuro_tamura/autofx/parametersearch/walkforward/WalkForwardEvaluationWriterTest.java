@@ -24,7 +24,12 @@ class WalkForwardEvaluationWriterTest {
     @Test
     void writesImmutableCandidateWindowAndTradeFiles(@TempDir Path directory) throws Exception {
         final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
-        final BacktestMetrics metrics = metrics();
+        final LocalDateTime outStart = specification.periods().outOfSampleFrom().atStartOfDay();
+        final LocalDateTime outEnd = specification.periods().outOfSampleTo().plusDays(1).atStartOfDay();
+        final LocalDateTime candidateWindowEnd =
+            outStart.plusMonths(specification.walkForwardCriteria().windowMonths());
+        final LocalDateTime windowEnd = candidateWindowEnd.isBefore(outEnd) ? candidateWindowEnd : outEnd;
+        final BacktestMetrics metrics = metrics(specification.walkForwardCriteria().minimumTradesPerWindow());
         final RankedCandidate selected = new RankedCandidate(
             1, true, true, List.of(),
             new CandidateBacktestEvaluation(
@@ -35,15 +40,15 @@ class WalkForwardEvaluationWriterTest {
         );
         final WalkForwardWindowEvaluation window = new WalkForwardWindowEvaluation(
             new WalkForwardWindow(
-                1, LocalDateTime.of(2025, 1, 1, 0, 0), LocalDateTime.of(2025, 4, 1, 0, 0)
+                1, outStart, windowEnd
             ),
             new BacktestResult(List.of(), BacktestAssumptions.current()),
             metrics
         );
         final WalkForwardEvaluationResult result = new WalkForwardEvaluationResult(
             "fixed-dataset",
-            LocalDateTime.of(2025, 1, 1, 0, 0),
-            LocalDateTime.of(2026, 1, 1, 0, 0),
+            outStart,
+            outEnd,
             specification.walkForwardCriteria(),
             List.of(new WalkForwardCandidateEvaluation(
                 selected, List.of(window), BigDecimal.ONE, BigDecimal.ONE, true, List.of()
@@ -56,18 +61,23 @@ class WalkForwardEvaluationWriterTest {
         assertThat(Files.readString(written.summaryPath()))
             .contains("datasetId,inSampleRank,passed,rejectionReasons")
             .contains("fixed-dataset,1,true,\"\"")
-            .contains(",1,1,1,3,5,0.75,0.75\n");
+            .contains(",1,1,1,"
+                + specification.walkForwardCriteria().windowMonths() + ','
+                + specification.walkForwardCriteria().minimumTradesPerWindow() + ','
+                + specification.walkForwardCriteria().minimumProfitableWindowRate().toPlainString() + ','
+                + specification.walkForwardCriteria().minimumPositiveAverageRWindowRate().toPlainString() + "\n");
         assertThat(Files.readString(written.windowsPath()))
-            .contains("fixed-dataset,1,1,2025-01-01T00:00,2025-04-01T00:00,5");
+            .contains("fixed-dataset,1,1," + outStart + ',' + windowEnd + ','
+                + specification.walkForwardCriteria().minimumTradesPerWindow());
         assertThat(written.tradesPath()).exists();
         assertThatIllegalStateException().isThrownBy(() -> writer.write(directory, result, specification));
     }
 
-    private BacktestMetrics metrics() {
+    private BacktestMetrics metrics(int tradeCount) {
         return new BacktestMetrics(
-            5, 3, 2, 0, new BigDecimal("0.6"), BigDecimal.valueOf(150), BigDecimal.valueOf(50),
+            tradeCount, tradeCount, 0, 0, BigDecimal.ONE, BigDecimal.valueOf(150), BigDecimal.ZERO,
             BigDecimal.valueOf(100), BigDecimal.TEN, BigDecimal.TEN, Optional.of(BigDecimal.valueOf(3)),
-            BigDecimal.valueOf(50), 2, 1, List.of(new BigDecimal("0.2")),
+            BigDecimal.valueOf(50), 2, 0, List.of(new BigDecimal("0.2")),
             Optional.of(new BigDecimal("0.2")), new BigDecimal("0.1"), BigDecimal.ZERO
         );
     }

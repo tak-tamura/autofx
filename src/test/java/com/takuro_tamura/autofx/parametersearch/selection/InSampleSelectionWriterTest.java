@@ -31,11 +31,18 @@ class InSampleSelectionWriterTest {
     @Test
     void writesImmutableRankingAndTradeLedgerCsv(@TempDir Path outputDirectory) throws Exception {
         final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final var criteria = specification.selectionCriteria();
+        final int tradeCount = criteria.minimumTrades();
+        final BigDecimal netProfit = criteria.minimumNetProfit().add(new BigDecimal("200"));
+        final BigDecimal profitFactor = criteria.minimumProfitFactor().add(BigDecimal.ONE);
+        final BigDecimal averageR = criteria.minimumAverageR().add(new BigDecimal("0.2"));
+        final LocalDateTime periodStart = specification.periods().inSampleFrom().atStartOfDay();
+        final LocalDateTime periodEnd = specification.periods().inSampleTo().plusDays(1).atStartOfDay();
         final var metrics = new BacktestMetrics(
-            30, 20, 10, 0, new BigDecimal("0.66666667"),
-            new BigDecimal("300"), new BigDecimal("100"), new BigDecimal("200"),
-            new BigDecimal("15"), new BigDecimal("10"), Optional.of(new BigDecimal("3")),
-            new BigDecimal("50"), 4, 2, List.of(BigDecimal.ONE), Optional.of(new BigDecimal("0.2")),
+            tradeCount, tradeCount, 0, 0, BigDecimal.ONE,
+            netProfit, BigDecimal.ZERO, netProfit,
+            BigDecimal.TEN, BigDecimal.ZERO, Optional.of(profitFactor),
+            new BigDecimal("50"), 4, 0, List.of(averageR), Optional.of(averageR),
             new BigDecimal("0.15"), BigDecimal.ZERO
         );
         final var evaluation = new CandidateBacktestEvaluation(
@@ -44,8 +51,7 @@ class InSampleSelectionWriterTest {
             metrics
         );
         final var searchResult = new InSampleParameterSearchResult(
-            "fixed-dataset", LocalDateTime.of(2023, 10, 28, 0, 0),
-            LocalDateTime.of(2025, 1, 1, 0, 0), List.of(evaluation)
+            "fixed-dataset", periodStart, periodEnd, List.of(evaluation)
         );
         final InSampleCandidateSelection selection = new InSampleCandidateRanker()
             .rank(searchResult, specification.selectionCriteria());
@@ -56,8 +62,18 @@ class InSampleSelectionWriterTest {
         assertThat(written.summaryPath()).exists();
         assertThat(Files.readString(written.summaryPath()))
             .contains("datasetId,periodStart,periodEndExclusive,rank")
-            .contains("fixed-dataset,2023-10-28T00:00,2025-01-01T00:00,1,true,true")
-            .contains(",0,0,0,14,1.5,3,30,0,1.0,0,5\n");
+            .contains("fixed-dataset," + periodStart + ',' + periodEnd + ",1,true,true")
+            .contains("," + specification.executionAssumptions().spread().toPlainString()
+                + ',' + specification.executionAssumptions().slippage().toPlainString()
+                + ',' + specification.executionAssumptions().commission().toPlainString()
+                + ',' + specification.riskParameters().atrPeriod()
+                + ',' + specification.riskParameters().stopMultiplier().stripTrailingZeros().toPlainString()
+                + ',' + specification.riskParameters().profitMultiplier().stripTrailingZeros().toPlainString()
+                + ',' + criteria.minimumTrades()
+                + ',' + criteria.minimumNetProfit().toPlainString()
+                + ',' + criteria.minimumProfitFactor().toPlainString()
+                + ',' + criteria.minimumAverageR().toPlainString()
+                + ',' + criteria.maximumSelectedCandidates() + "\n");
         assertThat(Files.readString(written.tradesPath()))
             .contains("datasetId,rank,selected,signalTime,fillTime,closeTime,side,size")
             .contains("fixed-dataset,1,true,2024-01-01T00:00,2024-01-01T01:00,2024-01-01T02:00,"

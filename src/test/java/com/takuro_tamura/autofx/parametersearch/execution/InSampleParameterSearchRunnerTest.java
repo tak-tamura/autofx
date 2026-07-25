@@ -31,6 +31,9 @@ class InSampleParameterSearchRunnerTest {
     @Test
     void evaluatesEveryCandidateUsingOnlyInSampleCandles() {
         final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final int expectedCandidateCount = specification.strategySearchSpace().candidateCount();
+        final LocalDateTime inSampleStart = specification.periods().inSampleFrom().atStartOfDay();
+        final LocalDateTime inSampleEnd = specification.periods().inSampleTo().atTime(23, 0);
         final BackTestService backTestService = mock(BackTestService.class);
         when(backTestService.run(any(), any(EmaCrossStrategy.class), any()))
             .thenReturn(new BacktestResult(List.of(), BacktestAssumptions.current()));
@@ -41,16 +44,16 @@ class InSampleParameterSearchRunnerTest {
             new StrategyParameterCandidateGenerator()
         );
         final List<Candle> dataset = List.of(
-            candle(LocalDateTime.of(2023, 10, 27, 23, 0)),
-            candle(LocalDateTime.of(2023, 10, 28, 0, 0)),
-            candle(LocalDateTime.of(2024, 12, 31, 23, 0)),
-            candle(LocalDateTime.of(2025, 1, 1, 0, 0))
+            candle(inSampleStart.minusHours(1)),
+            candle(inSampleStart),
+            candle(inSampleEnd),
+            candle(inSampleEnd.plusHours(1))
         );
 
         final InSampleParameterSearchResult result = runner.run("fixed-dataset", dataset, specification);
 
         assertThat(result.datasetId()).isEqualTo("fixed-dataset");
-        assertThat(result.evaluations()).hasSize(39);
+        assertThat(result.evaluations()).hasSize(expectedCandidateCount);
         assertThat(result.evaluations().get(0).parameters()).isEqualTo(specification.strategySearchSpace().baseline());
         assertThat(result.evaluations()).allSatisfy(evaluation -> {
             assertThat(evaluation.backtestResult().trades()).isEmpty();
@@ -59,11 +62,12 @@ class InSampleParameterSearchRunnerTest {
 
         @SuppressWarnings("unchecked")
         final ArgumentCaptor<List<Candle>> candlesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(backTestService, times(39)).run(candlesCaptor.capture(), any(EmaCrossStrategy.class), any());
+        verify(backTestService, times(expectedCandidateCount))
+            .run(candlesCaptor.capture(), any(EmaCrossStrategy.class), any());
         assertThat(candlesCaptor.getAllValues()).allSatisfy(candles ->
             assertThat(candles).extracting(Candle::getTime).containsExactly(
-                LocalDateTime.of(2023, 10, 28, 0, 0),
-                LocalDateTime.of(2024, 12, 31, 23, 0)
+                inSampleStart,
+                inSampleEnd
             )
         );
     }

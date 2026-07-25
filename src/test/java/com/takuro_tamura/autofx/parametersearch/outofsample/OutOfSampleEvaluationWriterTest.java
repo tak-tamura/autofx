@@ -24,6 +24,8 @@ class OutOfSampleEvaluationWriterTest {
     @Test
     void writesImmutableInSampleComparisonAndOutOfSampleLedger(@TempDir Path directory) throws Exception {
         final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final LocalDateTime outStart = specification.periods().outOfSampleFrom().atStartOfDay();
+        final LocalDateTime outEnd = specification.periods().outOfSampleTo().plusDays(1).atStartOfDay();
         final BacktestMetrics inSample = metrics(40, "1000", "1.5", "0.30", "500");
         final BacktestMetrics outOfSample = metrics(30, "200", "1.1", "0.10", "800");
         final RankedCandidate selected = new RankedCandidate(
@@ -36,8 +38,8 @@ class OutOfSampleEvaluationWriterTest {
         );
         final OutOfSampleEvaluationResult result = new OutOfSampleEvaluationResult(
             "fixed-dataset",
-            LocalDateTime.of(2025, 1, 1, 0, 0),
-            LocalDateTime.of(2026, 1, 1, 0, 0),
+            outStart,
+            outEnd,
             List.of(new OutOfSampleCandidateEvaluation(
                 selected,
                 new BacktestResult(List.of(), BacktestAssumptions.current()),
@@ -50,7 +52,11 @@ class OutOfSampleEvaluationWriterTest {
 
         assertThat(Files.readString(written.summaryPath()))
             .contains("datasetId,inSampleFrom,inSampleTo,outOfSampleFrom,outOfSampleTo,inSampleRank")
-            .contains("fixed-dataset,2023-10-28,2024-12-31,2025-01-01,2025-12-31,1")
+            .contains("fixed-dataset,"
+                + specification.periods().inSampleFrom() + ','
+                + specification.periods().inSampleTo() + ','
+                + specification.periods().outOfSampleFrom() + ','
+                + specification.periods().outOfSampleTo() + ",1")
             .contains(",40,30,-10,")
             .contains(",1000,200,-800,1.5,1.1,-0.4,500,800,300,0.30,0.10,-0.20,");
         assertThat(Files.readString(written.tradesPath()))

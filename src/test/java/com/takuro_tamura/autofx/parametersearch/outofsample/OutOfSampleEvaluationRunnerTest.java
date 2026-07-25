@@ -37,14 +37,17 @@ class OutOfSampleEvaluationRunnerTest {
     @Test
     void evaluatesOnlySelectedCandidatesWithoutChangingInSampleOrder() {
         final var specification = ParameterSearchSpecificationLoader.load("parameter-search.properties");
+        final LocalDateTime inStart = specification.periods().inSampleFrom().atStartOfDay();
+        final LocalDateTime outStart = specification.periods().outOfSampleFrom().atStartOfDay();
+        final LocalDateTime outEnd = specification.periods().outOfSampleTo().plusDays(1).atStartOfDay();
         final StrategyParameterSet baseline = specification.strategySearchSpace().baseline();
         final RankedCandidate first = ranked(1, true, baseline, metrics("0.30", "100"));
         final RankedCandidate second = ranked(2, true, withEmaShort(baseline, 7), metrics("0.20", "1000"));
         final RankedCandidate notSelected = ranked(3, false, withEmaShort(baseline, 6), metrics("0.10", "50"));
         final InSampleCandidateSelection selection = new InSampleCandidateSelection(
             "fixed-dataset",
-            LocalDateTime.of(2023, 10, 28, 0, 0),
-            LocalDateTime.of(2025, 1, 1, 0, 0),
+            inStart,
+            outStart,
             specification.selectionCriteria(),
             List.of(first, second, notSelected)
         );
@@ -60,10 +63,10 @@ class OutOfSampleEvaluationRunnerTest {
             mock(CandleService.class), backTestService, calculator
         );
         final List<Candle> dataset = List.of(
-            candle(LocalDateTime.of(2024, 12, 31, 23, 0)),
-            candle(LocalDateTime.of(2025, 1, 1, 0, 0)),
-            candle(LocalDateTime.of(2025, 12, 31, 23, 0)),
-            candle(LocalDateTime.of(2026, 1, 1, 0, 0))
+            candle(outStart.minusHours(1)),
+            candle(outStart),
+            candle(outEnd.minusHours(1)),
+            candle(outEnd)
         );
 
         final OutOfSampleEvaluationResult result = runner.run(dataset, selection, specification);
@@ -79,13 +82,13 @@ class OutOfSampleEvaluationRunnerTest {
         final ArgumentCaptor<List<Candle>> candlesCaptor = ArgumentCaptor.forClass(List.class);
         verify(backTestService, times(2)).run(
             candlesCaptor.capture(), any(EmaCrossStrategy.class), any(),
-            org.mockito.ArgumentMatchers.eq(LocalDateTime.of(2025, 1, 1, 0, 0))
+            org.mockito.ArgumentMatchers.eq(outStart)
         );
         assertThat(candlesCaptor.getAllValues()).allSatisfy(candles ->
             assertThat(candles).extracting(Candle::getTime).containsExactly(
-                LocalDateTime.of(2024, 12, 31, 23, 0),
-                LocalDateTime.of(2025, 1, 1, 0, 0),
-                LocalDateTime.of(2025, 12, 31, 23, 0)
+                outStart.minusHours(1),
+                outStart,
+                outEnd.minusHours(1)
             )
         );
         verify(backTestService, never()).run(any(CurrencyPair.class), any(TimeFrame.class), any(Integer.class), any());
