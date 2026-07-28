@@ -81,6 +81,25 @@ class HttpLoggingFilterTest {
             .doesNotContain("response-token");
     }
 
+    @Test
+    void omitsScreenResponseBody() throws Exception {
+        var request = new MockHttpServletRequest("GET", "/static/js/main.js");
+        var response = new MockHttpServletResponse();
+        String javascript = "const chartData = { prices: [1, 2, 3] };";
+        var chain = responseWritingChain(
+            HttpServletResponse.SC_OK,
+            MediaType.parseMediaType("application/javascript"),
+            javascript
+        );
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(formattedMessages())
+            .contains("HTTP response: method=GET, uri=/static/js/main.js, status=200, body=[screen content omitted]")
+            .doesNotContain(javascript);
+        assertThat(response.getContentAsString()).isEqualTo(javascript);
+    }
+
     private MockHttpServletRequest jsonRequest(String uri, String body) {
         var request = new MockHttpServletRequest("POST", uri);
         request.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -90,11 +109,15 @@ class HttpLoggingFilterTest {
     }
 
     private FilterChain responseWritingChain(int status, String body) {
+        return responseWritingChain(status, MediaType.APPLICATION_JSON, body);
+    }
+
+    private FilterChain responseWritingChain(int status, MediaType contentType, String body) {
         return (request, response) -> {
             request.getInputStream().readAllBytes();
             var httpResponse = (HttpServletResponse) response;
             httpResponse.setStatus(status);
-            httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            httpResponse.setContentType(contentType.toString());
             httpResponse.setCharacterEncoding(StandardCharsets.UTF_8.name());
             httpResponse.getWriter().write(body);
         };

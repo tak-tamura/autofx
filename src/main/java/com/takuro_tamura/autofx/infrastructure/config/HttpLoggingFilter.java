@@ -57,11 +57,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
                     request.getMethod(),
                     requestUri(request),
                     wrappedResponse.getStatus(),
-                    body(
-                        wrappedResponse.getContentAsByteArray(),
-                        response.getCharacterEncoding(),
-                        response.getContentType()
-                    )
+                    responseBody(wrappedResponse)
                 );
             } finally {
                 wrappedResponse.copyBodyToResponse();
@@ -93,6 +89,33 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
             // Fall back to UTF-8 when a malformed or unsupported charset is supplied.
         }
         return maskSensitiveValues(new String(content, charset));
+    }
+
+    private String responseBody(ContentCachingResponseWrapper response) {
+        if (isScreenContent(response.getContentType())) {
+            return "[screen content omitted]";
+        }
+        return body(
+            response.getContentAsByteArray(),
+            response.getCharacterEncoding(),
+            response.getContentType()
+        );
+    }
+
+    private boolean isScreenContent(String contentType) {
+        if (contentType == null) {
+            return false;
+        }
+
+        try {
+            MediaType mediaType = MediaType.parseMediaType(contentType);
+            return MediaType.TEXT_HTML.includes(mediaType)
+                || "css".equals(mediaType.getSubtype())
+                || "javascript".equals(mediaType.getSubtype())
+                || "x-javascript".equals(mediaType.getSubtype());
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private boolean isTextContent(String contentType) {
