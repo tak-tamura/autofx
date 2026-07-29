@@ -100,6 +100,25 @@ class HttpLoggingFilterTest {
         assertThat(response.getContentAsString()).isEqualTo(javascript);
     }
 
+    @Test
+    void omitsWebManifestResponseBody() throws Exception {
+        var request = new MockHttpServletRequest("GET", "/manifest.json");
+        var response = new MockHttpServletResponse();
+        String manifest = "{\"short_name\":\"AutoFX\",\"name\":\"AutoFX Trading App\"}";
+        var chain = responseWritingChain(
+            HttpServletResponse.SC_OK,
+            MediaType.parseMediaType("application/manifest+json"),
+            manifest
+        );
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(formattedMessages())
+            .contains("HTTP response: method=GET, uri=/manifest.json, status=200, body=[screen content omitted]")
+            .doesNotContain(manifest);
+        assertThat(response.getContentAsString()).isEqualTo(manifest);
+    }
+
     private MockHttpServletRequest jsonRequest(String uri, String body) {
         var request = new MockHttpServletRequest("POST", uri);
         request.setContentType(MediaType.APPLICATION_JSON_VALUE);

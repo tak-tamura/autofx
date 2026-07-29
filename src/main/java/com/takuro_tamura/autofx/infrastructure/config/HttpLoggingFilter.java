@@ -112,7 +112,8 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
             return MediaType.TEXT_HTML.includes(mediaType)
                 || "css".equals(mediaType.getSubtype())
                 || "javascript".equals(mediaType.getSubtype())
-                || "x-javascript".equals(mediaType.getSubtype());
+                || "x-javascript".equals(mediaType.getSubtype())
+                || "manifest+json".equals(mediaType.getSubtype());
         } catch (IllegalArgumentException e) {
             return false;
         }
