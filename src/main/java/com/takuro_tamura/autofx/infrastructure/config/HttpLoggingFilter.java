@@ -47,13 +47,15 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
         } finally {
             try {
                 log.info(
-                    "HTTP request: method={}, uri={}, body={}",
+                    "HTTP request: sourceIp={}, method={}, uri={}, body={}",
+                    request.getRemoteAddr(),
                     request.getMethod(),
                     requestUri(request),
                     body(wrappedRequest.getContentAsByteArray(), request.getCharacterEncoding(), request.getContentType())
                 );
                 log.info(
-                    "HTTP response: method={}, uri={}, status={}, body={}",
+                    "HTTP response: sourceIp={}, method={}, uri={}, status={}, body={}",
+                    request.getRemoteAddr(),
                     request.getMethod(),
                     requestUri(request),
                     wrappedResponse.getStatus(),

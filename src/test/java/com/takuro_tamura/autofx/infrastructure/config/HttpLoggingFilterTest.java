@@ -39,14 +39,21 @@ class HttpLoggingFilterTest {
     @Test
     void logsRequestAndResponseBodies() throws Exception {
         var request = jsonRequest("/api/v1/trade/config", "{\"enabled\":true}");
+        request.setRemoteAddr("192.0.2.10");
         var response = new MockHttpServletResponse();
         var chain = responseWritingChain(HttpServletResponse.SC_OK, "{\"result\":\"ok\"}");
 
         filter.doFilter(request, response, chain);
 
         assertThat(formattedMessages())
-            .contains("HTTP request: method=POST, uri=/api/v1/trade/config, body={\"enabled\":true}")
-            .contains("HTTP response: method=POST, uri=/api/v1/trade/config, status=200, body={\"result\":\"ok\"}");
+            .contains(
+                "HTTP request: sourceIp=192.0.2.10, method=POST, "
+                    + "uri=/api/v1/trade/config, body={\"enabled\":true}"
+            )
+            .contains(
+                "HTTP response: sourceIp=192.0.2.10, method=POST, "
+                    + "uri=/api/v1/trade/config, status=200, body={\"result\":\"ok\"}"
+            );
         assertThat(response.getContentAsString()).isEqualTo("{\"result\":\"ok\"}");
     }
 
@@ -95,7 +102,10 @@ class HttpLoggingFilterTest {
         filter.doFilter(request, response, chain);
 
         assertThat(formattedMessages())
-            .contains("HTTP response: method=GET, uri=/static/js/main.js, status=200, body=[screen content omitted]")
+            .contains(
+                "HTTP response: sourceIp=127.0.0.1, method=GET, "
+                    + "uri=/static/js/main.js, status=200, body=[screen content omitted]"
+            )
             .doesNotContain(javascript);
         assertThat(response.getContentAsString()).isEqualTo(javascript);
     }
@@ -114,7 +124,10 @@ class HttpLoggingFilterTest {
         filter.doFilter(request, response, chain);
 
         assertThat(formattedMessages())
-            .contains("HTTP response: method=GET, uri=/manifest.json, status=200, body=[screen content omitted]")
+            .contains(
+                "HTTP response: sourceIp=127.0.0.1, method=GET, "
+                    + "uri=/manifest.json, status=200, body=[screen content omitted]"
+            )
             .doesNotContain(manifest);
         assertThat(response.getContentAsString()).isEqualTo(manifest);
     }
