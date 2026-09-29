@@ -83,6 +83,16 @@ GET  /api/v1/trade/config
 POST /api/v1/trade/config
 ```
 
+注文履歴画面では、指定期間に一致する全注文をCSVまたはJSONでダウンロードできます。
+エクスポートAPIは次の形式です（認証が必要です）。
+
+```text
+GET /api/v1/order/history/export?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&format=csv
+GET /api/v1/order/history/export?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&format=json
+```
+
+JSONには対象期間、件数、期間損益、注文一覧が含まれます。CSVには注文一覧の10項目が出力されます。
+
 主な設定キーは次のとおりです。
 
 | キー | 用途 |

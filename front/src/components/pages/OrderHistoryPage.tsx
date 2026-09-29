@@ -30,6 +30,7 @@ import {
   Divider,
 } from "@chakra-ui/react";
 import { useOrderHistory } from "../../hooks/useOrderHistory";
+import { useOrderHistoryExport } from "../../hooks/useOrderHistoryExport";
 
 const getFirstDayOfMonth = (date: Date): string => {
   const year = date.getFullYear();
@@ -59,6 +60,7 @@ export const OrderHistoryPage: React.FC = () => {
     startDate,
     endDate,
   });
+  const { download, exportingFormat, exportError } = useOrderHistoryExport();
 
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
@@ -75,6 +77,10 @@ export const OrderHistoryPage: React.FC = () => {
   const handleSearchClick = () => {
     // ページを先頭に戻すだけ。日付等はすでに state が更新済み
     setPage(0);
+  };
+
+  const handleDownload = (format: "csv" | "json") => {
+    void download({ startDate, endDate }, format);
   };
 
   return (
@@ -128,7 +134,25 @@ export const OrderHistoryPage: React.FC = () => {
               </FormControl>
             </HStack>
 
-            <HStack justify="flex-end">
+            <HStack justify="space-between">
+              <HStack>
+                <Button
+                  onClick={() => handleDownload("csv")}
+                  variant="outline"
+                  isLoading={exportingFormat === "csv"}
+                  isDisabled={loading || exportingFormat !== null || !data}
+                >
+                  CSVダウンロード
+                </Button>
+                <Button
+                  onClick={() => handleDownload("json")}
+                  variant="outline"
+                  isLoading={exportingFormat === "json"}
+                  isDisabled={loading || exportingFormat !== null || !data}
+                >
+                  JSONダウンロード
+                </Button>
+              </HStack>
               <Button
                 onClick={handleSearchClick}
                 colorScheme="blue"
@@ -173,6 +197,13 @@ export const OrderHistoryPage: React.FC = () => {
           <Alert status="error">
             <AlertIcon />
             データの取得に失敗しました: {error.message}
+          </Alert>
+        )}
+
+        {exportError && (
+          <Alert status="error">
+            <AlertIcon />
+            ダウンロードに失敗しました: {exportError.message}
           </Alert>
         )}
 
